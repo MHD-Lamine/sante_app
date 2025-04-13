@@ -1,0 +1,22 @@
+# === 🔥 Framework principal ===
+Flask
+
+# === 🗃 ORM & Base de données ===
+Flask-SQLAlchemy
+psycopg2-binary  # Connecteur PostgreSQL
+
+# === ♻️ Migrations de base de données ===
+Flask-Migrate
+Flask-Script  # Nécessaire pour manage.py
+
+# === 🌍 CORS (pour permettre Flutter ↔ Flask) ===
+Flask-Cors
+
+# === 🔐 Variables d'environnement ===
+python-dotenv
+
+# === (Optionnel) 🔒 Authentification avec JWT ===
+Flask-JWT-Extended
+
+# === (Optionnel) 📦 Pour les appels HTTP en local ou tests ===
+requests

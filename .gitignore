@@ -1,0 +1,37 @@
+<<<<<<< HEAD
+# Python
+__pycache__/
+*.pyc
+.env
+
+# Docker
+*.log
+*.pid MHD-Lamine
+
+# Frontend
+build/
+node_modules/
+flutter/.dart_tool
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Migrations
+backend/migrations/
+=======
+# Node / Flutter / Python / Arduino
+.env
+__pycache__/
+*.pyc
+build/
+dist/
+*.ipynb_checkpoints/
+*.DS_Store
+.venv/
+.idea/
+.vscode/
+.flutter-plugins
+.packages
+pubspec.lock
+*.hex
+>>>>>>> 9b2b9aada5a936c49794ed78f2fb9cf2c8b8ff19
