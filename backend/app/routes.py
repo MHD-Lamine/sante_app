@@ -1,7 +1,7 @@
 # app/routes.py
 
 from flask import Blueprint, request, jsonify
-from app.models import db, User, Measure
+from app.models import Alert, Report, db, User, Measure
 from datetime import datetime
 
 # Création d'un Blueprint pour organiser les routes
