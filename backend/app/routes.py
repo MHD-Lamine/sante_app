@@ -91,3 +91,53 @@ def get_latest_measure(user_id):
         "diastolic": m.diastolic,
         "temperature": m.temperature
     })
+
+@main.route("/alerts", methods=["POST"])
+def create_alert():
+    data = request.get_json()
+    alert = Alert(
+        user_id=data["user_id"],
+        type=data["type"],
+        level=data["level"],
+        message=data["message"],
+        date_sent=datetime.strptime(data["date_sent"], "%Y-%m-%d %H:%M:%S")
+    )
+    db.session.add(alert)
+    db.session.commit()
+    return jsonify({"message": "Alert créer"}), 201
+
+@main.route("/alerts/<int:user_id>", methods=["GET"])
+def get_alerts(user_id):
+    alerts = Alert.query.filter_by(user_id=user_id).order_by(Alert.date_sent.desc()).all()
+    return jsonify([
+        {
+            "id": a.id,
+            "type": a.type,
+            "level": a.level,
+            "message": a.message,
+            "date_sent": a.date_sent.strftime("%Y-%m-%d %H:%M:%S")
+        } for a in alerts
+    ])
+
+@main.route("/reports", methods=["POST"])
+def create_report():
+    data = request.get_json()
+    report = Report(
+        user_id=data["user_id"],
+        date_generated=datetime.strptime(data["date_generated"], "%Y-%m-%d %H:%M:%S"),
+        content=data["content"]
+    )
+    db.session.add(report)
+    db.session.commit()
+    return jsonify({"message": "Rapport créer"}), 201
+
+@main.route("/reports/<int:user_id>", methods=["GET"])
+def get_reports(user_id):
+    reports = Report.query.filter_by(user_id=user_id).order_by(Report.date_generated.desc()).all()
+    return jsonify([
+        {
+            "id": r.id,
+            "date_generated": r.date_generated.strftime("%Y-%m-%d %H:%M:%S"),
+            "content": r.content
+        } for r in reports
+    ])
