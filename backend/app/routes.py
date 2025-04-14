@@ -192,3 +192,20 @@ def login():
         "user_id": user.id,
         "name": user.name
     }), 200
+
+# === Profil ===
+@main.route("/profile", methods=["GET"])
+@jwt_required()
+def get_profile():
+    # 🔑 Récupère l'ID de l'utilisateur connecté à partir du token
+    user_id = get_jwt_identity()
+
+    # 🔎 Recherche de l'utilisateur dans la base
+    user = User.query.get_or_404(user_id)
+
+    return jsonify({
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role
+    })
