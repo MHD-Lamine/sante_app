@@ -1,7 +1,7 @@
 # app/routes.py
 
 from flask import Blueprint, request, jsonify
-from app.models import Alert, Report, db, User, Measure
+from app.models import Alert, Reminder, Report, db, User, Measure
 from datetime import datetime
 
 # Création d'un Blueprint pour organiser les routes
@@ -140,4 +140,29 @@ def get_reports(user_id):
             "date_generated": r.date_generated.strftime("%Y-%m-%d %H:%M:%S"),
             "content": r.content
         } for r in reports
+    ])
+
+@main.route("/reminders", methods=["POST"])
+def create_reminder():
+    data = request.get_json()
+    reminder = Reminder(
+        user_id=data["user_id"],
+        title=data["title"],
+        description=data.get("description", ""),
+        date_time=datetime.strptime(data["date_time"], "%Y-%m-%d %H:%M:%S")
+    )
+    db.session.add(reminder)
+    db.session.commit()
+    return jsonify({"message": "Rappel créer"}), 201
+
+@main.route("/reminders/<int:user_id>", methods=["GET"])
+def get_reminders(user_id):
+    reminders = Reminder.query.filter_by(user_id=user_id).all()
+    return jsonify([
+        {
+            "id": r.id,
+            "title": r.title,
+            "description": r.description,
+            "date_time": r.date_time.strftime("%Y-%m-%d %H:%M:%S")
+        } for r in reminders
     ])
