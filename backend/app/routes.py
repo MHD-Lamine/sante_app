@@ -220,3 +220,24 @@ def update_profile():
             "email": user.email
         }
     })
+
+
+@main.route("/change_password", methods=["PUT"])
+@jwt_required()
+def change_password():
+    user_id = get_jwt_identity()  # 🔐 Utilisateur connecté via JWT
+    user = User.query.get_or_404(user_id)
+
+    data = request.get_json()
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+
+    # 🔐 Vérifie que l'ancien mot de passe est correct
+    if not check_password_hash(user.password, old_password):
+        return jsonify({"msg": "Mot de passe actuel incorrect"}), 401
+
+    # Hash du nouveau mot de passe
+    user.password = generate_password_hash(new_password)
+    db.session.commit()
+
+    return jsonify({"msg": "Mot de passe mis à jour avec succès"}), 200
