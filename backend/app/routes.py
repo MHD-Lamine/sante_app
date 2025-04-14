@@ -4,6 +4,10 @@ from flask import Blueprint, request, jsonify
 from app.models import Alert, Reminder, Report, db, User, Measure
 from datetime import datetime
 
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from werkzeug.security import check_password_hash
+
+
 # Création d'un Blueprint pour organiser les routes
 main = Blueprint("main", __name__)
 
@@ -166,3 +170,25 @@ def get_reminders(user_id):
             "date_time": r.date_time.strftime("%Y-%m-%d %H:%M:%S")
         } for r in reminders
     ])
+
+
+# === Login ===
+@main.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+
+    # Recherche de l'utilisateur par email
+    user = User.query.filter_by(email=data.get("email")).first()
+
+    # Vérification du mot de passe (à adapter si hashé)
+    if not user or user.password != data.get("password"):
+        return jsonify({"msg": "Email ou mot de passe incorrect"}), 401
+
+    # Génération du token JWT avec l'identité (ID utilisateur)
+    access_token = create_access_token(identity=user.id)
+
+    return jsonify({
+        "access_token": access_token,
+        "user_id": user.id,
+        "name": user.name
+    }), 200
