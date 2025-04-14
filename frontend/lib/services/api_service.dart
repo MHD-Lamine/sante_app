@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:5000'; //  IP en debug
+  static const String baseUrl = 'http://10.0.2.2:5000'; //  IP en debug
   static final storage = FlutterSecureStorage();
 
   /// 🔐 Login utilisateur : email + mot de passe
