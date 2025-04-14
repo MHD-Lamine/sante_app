@@ -193,7 +193,22 @@ def login():
         "name": user.name
     }), 200
 
-# === Profil ===
+# === Acceder au profil ===
+@main.route("/profile", methods=["GET"])
+@jwt_required()
+def get_profile():
+    user_id = get_jwt_identity()
+    user = User.query.get_or_404(user_id)
+
+    return jsonify({
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role
+    })
+
+
+# === Profil update vvvvv ===
 @main.route("/profile", methods=["PUT"])
 @jwt_required()
 def update_profile():
