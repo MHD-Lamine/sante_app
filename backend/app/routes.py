@@ -194,18 +194,29 @@ def login():
     }), 200
 
 # === Profil ===
-@main.route("/profile", methods=["GET"])
+@main.route("/profile", methods=["PUT"])
 @jwt_required()
-def get_profile():
-    # 🔑 Récupère l'ID de l'utilisateur connecté à partir du token
-    user_id = get_jwt_identity()
-
-    # 🔎 Recherche de l'utilisateur dans la base
+def update_profile():
+    user_id = get_jwt_identity()  # 🔐 Récupère l'ID à partir du token
     user = User.query.get_or_404(user_id)
 
+    data = request.get_json()
+
+    # Mise à jour des champs autorisés
+    if "name" in data:
+        user.name = data["name"]
+    if "email" in data:
+        user.email = data["email"]
+    if "password" in data:
+        user.password = data["password"]  # à sécuriser plus tard (hash)
+
+    db.session.commit()
+
     return jsonify({
-        "id": user.id,
-        "name": user.name,
-        "email": user.email,
-        "role": user.role
+        "message": "Profil mis à jour",
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
     })
