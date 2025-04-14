@@ -5,7 +5,7 @@ from app.models import Alert, Reminder, Report, db, User, Measure
 from datetime import datetime
 
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from werkzeug.security import check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # Création d'un Blueprint pour organiser les routes
@@ -20,13 +20,17 @@ def ping():
 @main.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json()
+
+    hashed_password = generate_password_hash(data.get("password"))  # 🔐 Hash
+
     user = User(
         name=data.get("name"),
         email=data.get("email"),
-        password=data.get("password")
+        password=hashed_password  # Enregistre le mot de passe hashé
     )
     db.session.add(user)
     db.session.commit()
+
     return jsonify({"message": "Utilisateur créé avec succès", "user_id": user.id}), 201
 
 # === 📋 Liste des utilisateurs ===
@@ -176,17 +180,13 @@ def get_reminders(user_id):
 @main.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
-
-    # Recherche de l'utilisateur par email
     user = User.query.filter_by(email=data.get("email")).first()
 
-    # Vérification du mot de passe (à adapter si hashé)
-    if not user or user.password != data.get("password"):
+    # 🔐 Vérification du mot de passe hashé
+    if not user or not check_password_hash(user.password, data.get("password")):
         return jsonify({"msg": "Email ou mot de passe incorrect"}), 401
 
-    # Génération du token JWT avec l'identité (ID utilisateur)
     access_token = create_access_token(identity=user.id)
-
     return jsonify({
         "access_token": access_token,
         "user_id": user.id,
