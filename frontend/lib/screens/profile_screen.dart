@@ -32,10 +32,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
+    // ✅ AUCUN Content-Type ici, car c’est un GET sans body
     final response = await http.get(
       Uri.parse('${ApiService.baseUrl}/profile'),
       headers: {
         'Authorization': 'Bearer $token',
+        'Accept': 'application/json', // ✅ PAS Content-Type !
       },
     );
 
@@ -45,6 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         loading = false;
       });
     } else {
+      print('Erreur /profile : ${response.statusCode} — ${response.body}');
       setState(() {
         errorMessage = "Erreur : ${response.statusCode}";
         loading = false;
@@ -61,12 +64,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     if (errorMessage != null) {
       return Scaffold(
         appBar: AppBar(title: const Text("Profil")),
-        body: Center(child: Text(errorMessage!, style: const TextStyle(color: Colors.red))),
+        body: Center(
+          child: Text(
+            errorMessage!,
+            style: const TextStyle(color: Colors.red),
+          ),
+        ),
       );
     }
 

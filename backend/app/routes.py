@@ -182,11 +182,10 @@ def login():
     data = request.get_json()
     user = User.query.filter_by(email=data.get("email")).first()
 
-    # 🔐 Vérification du mot de passe hashé
     if not user or not check_password_hash(user.password, data.get("password")):
         return jsonify({"msg": "Email ou mot de passe incorrect"}), 401
 
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))  # ✅ ICI
     return jsonify({
         "access_token": access_token,
         "user_id": user.id,
@@ -197,6 +196,14 @@ def login():
 @main.route("/profile", methods=["GET"])
 @jwt_required()
 def get_profile():
+    print("✅ Requête GET /profile reçue")
+    print("Headers :", dict(request.headers))
+    
+    try:
+        request.get_json(force=False, silent=True)
+    except Exception as e:
+        print("Erreur silencieuse JSON :", e)
+
     user_id = get_jwt_identity()
     user = User.query.get_or_404(user_id)
 
@@ -206,7 +213,6 @@ def get_profile():
         "email": user.email,
         "role": user.role
     })
-
 
 # === Profil update vvvvv ===
 @main.route("/profile", methods=["PUT"])
