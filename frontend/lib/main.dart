@@ -1,4 +1,5 @@
 
+import 'package:Sante/screens/edit_profile_screen.dart';
 import 'package:Sante/screens/login_screen.dart';
 import 'package:Sante/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
@@ -26,7 +27,8 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const LoginScreen(),
-        '/profile': (context) => const ProfileScreen(), // à créer
+        '/profile': (context) => const ProfileScreen(), // 
+        '/edit-profile': (context) => const EditProfileScreen(),  // à créer
       },
     );
   }

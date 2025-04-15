@@ -32,12 +32,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    // ✅ AUCUN Content-Type ici, car c’est un GET sans body
     final response = await http.get(
       Uri.parse('${ApiService.baseUrl}/profile'),
       headers: {
         'Authorization': 'Bearer $token',
-        'Accept': 'application/json', // ✅ PAS Content-Type !
+        'Accept': 'application/json',
       },
     );
 
@@ -60,6 +59,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) {
       Navigator.pushReplacementNamed(context, '/');
     }
+  }
+
+  void _goToEditProfile() {
+    Navigator.pushNamed(context, '/edit-profile').then((_) {
+      // Recharger les données après retour
+      fetchProfile();
+    });
   }
 
   @override
@@ -87,10 +93,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text("Mon Profil"),
         actions: [
           IconButton(
+            onPressed: _goToEditProfile,
+            icon: const Icon(Icons.edit),
+            tooltip: "Modifier",
+          ),
+          IconButton(
             onPressed: _logout,
             icon: const Icon(Icons.logout),
             tooltip: "Déconnexion",
-          )
+          ),
         ],
       ),
       body: Padding(
