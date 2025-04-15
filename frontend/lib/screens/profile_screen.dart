@@ -60,13 +60,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Navigator.pushReplacementNamed(context, '/');
     }
   }
-
+/// Fonction pour aller à l'écran de modification du profil
+  /// et recharger les données après retour
   void _goToEditProfile() {
     Navigator.pushNamed(context, '/edit-profile').then((_) {
       // Recharger les données après retour
       fetchProfile();
     });
   }
+/// Fonction pour aller à l'écran de changement de mot de passe
+    /// et recharger les données après retour
+  void _goToChangePassword() {
+      Navigator.pushNamed(context, '/change-password').then((_) {
+        // Recharger les données après retour
+        fetchProfile();
+      });
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +110,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: _logout,
             icon: const Icon(Icons.logout),
             tooltip: "Déconnexion",
+          ),
+          IconButton(
+            onPressed: _goToChangePassword,
+            icon: const Icon(Icons.lock_reset),
+            tooltip: "Changer le mot de passe",
           ),
         ],
       ),
