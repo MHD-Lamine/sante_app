@@ -1,7 +1,7 @@
 # app/routes.py
 
 from flask import Blueprint, request, jsonify
-from app.models import Alert, Reminder, Report, db, User, Measure
+from app.models import Alert, Appointment, HealthTip, Medication, Reminder, Report, db, User, Measure
 from datetime import datetime
 
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
@@ -262,3 +262,109 @@ def change_password():
     db.session.commit()
 
     return jsonify({"msg": "Mot de passe mis à jour avec succès"}), 200
+
+
+
+# === Créer un médicament ===
+@main.route("/medications", methods=["POST"])
+@jwt_required()
+def create_medication():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    med = Medication(
+        user_id=user_id,
+        name=data.get("name"),
+        dosage=data.get("dosage"),
+        time=data.get("time"),
+        taken=data.get("taken", False),
+        date_prescribed=datetime.strptime(data["date_prescribed"], "%Y-%m-%d %H:%M:%S") if "date_prescribed" in data else None,
+        note=data.get("note")
+    )
+    db.session.add(med)
+    db.session.commit()
+    return jsonify({"message": "Médicament ajouté"}), 201
+
+# === Liste des médicaments d’un utilisateur ===
+@main.route("/medications", methods=["GET"])
+@jwt_required()
+def get_medications():
+    user_id = get_jwt_identity()
+    meds = Medication.query.filter_by(user_id=user_id).all()
+    return jsonify([
+        {
+            "id": m.id,
+            "name": m.name,
+            "dosage": m.dosage,
+            "time": m.time,
+            "taken": m.taken,
+            "date_prescribed": m.date_prescribed.strftime("%Y-%m-%d %H:%M:%S") if m.date_prescribed else None,
+            "note": m.note
+        } for m in meds
+    ])
+
+# === Supprimer un médicament ===
+@main.route("/medications/<int:med_id>", methods=["DELETE"])
+@jwt_required()
+def delete_medication(med_id):
+    med = Medication.query.get_or_404(med_id)
+    db.session.delete(med)
+    db.session.commit()
+    return jsonify({"message": "Médicament supprimé"})
+
+
+
+@main.route("/appointments", methods=["POST"])
+@jwt_required()
+def create_appointment():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    rdv = Appointment(
+        user_id=user_id,
+        title=data.get("title"),
+        location=data.get("location"),
+        doctor=data.get("doctor"),
+        date_time=datetime.strptime(data["date_time"], "%Y-%m-%d %H:%M:%S"),
+        notes=data.get("notes")
+    )
+    db.session.add(rdv)
+    db.session.commit()
+    return jsonify({"message": "Rendez-vous créé"}), 201
+
+@main.route("/appointments", methods=["GET"])
+@jwt_required()
+def get_appointments():
+    user_id = get_jwt_identity()
+    appts = Appointment.query.filter_by(user_id=user_id).order_by(Appointment.date_time.asc()).all()
+    return jsonify([
+        {
+            "id": a.id,
+            "title": a.title,
+            "location": a.location,
+            "doctor": a.doctor,
+            "date_time": a.date_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "notes": a.notes
+        } for a in appts
+    ])
+
+@main.route("/appointments/<int:appt_id>", methods=["DELETE"])
+@jwt_required()
+def delete_appointment(appt_id):
+    appt = Appointment.query.get_or_404(appt_id)
+    db.session.delete(appt)
+    db.session.commit()
+    return jsonify({"message": "Rendez-vous supprimé"})
+
+
+@main.route("/health_tips", methods=["GET"])
+def get_health_tips():
+    tips = HealthTip.query.order_by(HealthTip.created_at.desc()).limit(5).all()
+    return jsonify([
+        {
+            "id": t.id,
+            "content": t.content,
+            "type": t.type,
+            "created_at": t.created_at.strftime("%Y-%m-%d")
+        } for t in tips
+    ])

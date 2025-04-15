@@ -5,16 +5,12 @@ from app import db
 # 🔹 Modèle : Utilisateur
 # ============================
 class User(db.Model):
-    __tablename__ = 'user'  # Nom explicite de la table dans la base
-
-    # Clé primaire unique pour chaque utilisateur
     id = db.Column(db.Integer, primary_key=True)
-
-    # Champs de base pour l'utilisateur
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(256), nullable=False)    
-    role = db.Column(db.String(50), default='patient')  # Ex : patient, admin
+    name = db.Column(db.Text)
+    email = db.Column(db.Text, unique=True, nullable=False)
+    password = db.Column(db.Text, nullable=False)
+    role = db.Column(db.String(20), default="patient")
+    last_password_change = db.Column(db.DateTime)
 
     # Relations vers les autres tables
     measures = db.relationship('Measure', backref='user', lazy=True)
@@ -76,3 +72,32 @@ class Report(db.Model):
 
     date_generated = db.Column(db.DateTime, nullable=False)
     content = db.Column(db.Text)            # Contenu brut ou lien vers un PDF
+
+class Medication(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.Text, nullable=False)
+    dosage = db.Column(db.Text)
+    time = db.Column(db.Text)  # "matin", "midi", "soir"
+    taken = db.Column(db.Boolean, default=False)
+    date_prescribed = db.Column(db.DateTime)
+    note = db.Column(db.Text)
+
+    user = db.relationship("User", backref="medications")
+
+class Appointment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    title = db.Column(db.Text)
+    location = db.Column(db.Text)
+    doctor = db.Column(db.Text)
+    date_time = db.Column(db.DateTime)
+    notes = db.Column(db.Text)
+
+    user = db.relationship("User", backref="appointments")
+
+class HealthTip(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    type = db.Column(db.Text)  # ex: "activité", "alimentation", "repos"
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
