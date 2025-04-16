@@ -1,8 +1,11 @@
+import 'package:Sante/models/chart_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import '../controllers/home_controller.dart';
+import 'package:Sante/services/api_service.dart';
+import 'package:Sante/controllers/home_controller.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,9 +15,22 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+  String userName = "Utilisateur";
+
   @override
   void initState() {
     super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final token = await ApiService.getToken();
+    final name = await ApiService.getUserName(); 
+    setState(() {
+      userName = name ?? "Utilisateur";
+    });
+
     Provider.of<HomeController>(context, listen: false).fetchLatestMeasure();
   }
 
@@ -22,6 +38,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Consumer<HomeController>(
       builder: (context, controller, _) {
+        final pages = [
+          _buildDashboard(controller),
+          const Center(child: Text("📊 Historique")),
+          const Center(child: Text("💊 Médicaments")),
+          const Center(child: Text("📅 Rendez-vous")),
+          const Center(child: Text("🚨 Alertes")),
+          const Center(child: Text("👤 Profil")),
+        ];
+
         return Scaffold(
           appBar: AppBar(
             title: const Text("SantéTrack"),
@@ -29,31 +54,74 @@ class _HomeScreenState extends State<HomeScreen> {
             actions: [
               IconButton(
                 icon: const Icon(FlutterRemix.notification_3_line),
-                onPressed: () {},
+                tooltip: "Alertes",
+                onPressed: () {
+                  setState(() => _currentIndex = 4);
+                },
               ),
               const SizedBox(width: 8),
-              CircleAvatar(
-                backgroundColor: Colors.indigo[300],
-                child: const Icon(FlutterRemix.user_line, color: Colors.white),
+              GestureDetector(
+                onTap: () {
+                  setState(() => _currentIndex = 5);
+                },
+                child: CircleAvatar(
+                  backgroundColor: Colors.indigo[300],
+                  child: const Icon(FlutterRemix.user_line, color: Colors.white),
+                ),
               ),
               const SizedBox(width: 16),
             ],
           ),
           drawer: Drawer(
             child: ListView(
-              children: const [
-                DrawerHeader(
+              children: [
+                const DrawerHeader(
                   decoration: BoxDecoration(color: Color(0xFF4F46E5)),
                   child: Text("SantéTrack", style: TextStyle(color: Colors.white, fontSize: 24)),
                 ),
-                ListTile(leading: Icon(FlutterRemix.dashboard_line), title: Text("Tableau de bord")),
-                ListTile(leading: Icon(FlutterRemix.heart_pulse_line), title: Text("Mes mesures")),
-                ListTile(leading: Icon(FlutterRemix.medicine_bottle_line), title: Text("Médicaments")),
-                ListTile(leading: Icon(FlutterRemix.calendar_check_line), title: Text("Rendez-vous")),
-                ListTile(leading: Icon(FlutterRemix.user_settings_line), title: Text("Mon profil")),
-                ListTile(leading: Icon(FlutterRemix.settings_3_line), title: Text("Paramètres")),
-                Divider(),
-                ListTile(leading: Icon(FlutterRemix.logout_box_line), title: Text("Déconnexion")),
+                ListTile(
+                  leading: const Icon(FlutterRemix.dashboard_line),
+                  title: const Text("Tableau de bord"),
+                  onTap: () {
+                    setState(() => _currentIndex = 0);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(FlutterRemix.heart_pulse_line),
+                  title: const Text("Mes mesures"),
+                  onTap: () {
+                    setState(() => _currentIndex = 1);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(FlutterRemix.medicine_bottle_line),
+                  title: const Text("Médicaments"),
+                  onTap: () {
+                    setState(() => _currentIndex = 2);
+                    Navigator.pop(context);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(FlutterRemix.calendar_check_line),
+                  title: const Text("Rendez-vous"),
+                  onTap: () {
+                    setState(() => _currentIndex = 3);
+                    Navigator.pop(context);
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(FlutterRemix.logout_box_line),
+                  title: const Text("Déconnexion"),
+                  onTap: () async {
+                    await ApiService.logout();
+                    if (context.mounted) {
+                      Navigator.pushReplacementNamed(context, '/');
+                    }
+                  },
+                ),
               ],
             ),
           ),
@@ -61,32 +129,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ? const Center(child: CircularProgressIndicator())
               : controller.error != null
                   ? Center(child: Text(controller.error!))
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              _buildMeasureCard("Glycémie", controller.latestGlycemia?.toStringAsFixed(1) ?? "--", "mmol/L", Icons.opacity, Colors.indigo),
-                              const SizedBox(width: 8),
-                              _buildMeasureCard("Tension", controller.latestTension ?? "--", "", Icons.favorite, Colors.orange),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          _buildGlycemiaChart(controller),
-                          const SizedBox(height: 16),
-                          _buildBpChart(controller),
-                        ],
-                      ),
-                    ),
-          floatingActionButton: FloatingActionButton(
-            backgroundColor: const Color(0xFF4F46E5),
-            onPressed: () {},
-            child: const Icon(Icons.add),
-          ),
+                  : pages[_currentIndex],
           bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex > 3 ? 0 : _currentIndex,
             selectedItemColor: const Color(0xFF4F46E5),
             unselectedItemColor: Colors.grey,
+            onTap: (index) {
+              setState(() => _currentIndex = index);
+            },
             items: const [
               BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
               BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: "Historique"),
@@ -96,6 +146,57 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildDashboard(HomeController controller) {
+    final now = DateTime.now();
+    final dateFormatted = DateFormat('d MMMM yyyy', 'fr_FR').format(now);
+    final lastUpdate = controller.lastUpdate != null
+        ? DateFormat('HH:mm').format(controller.lastUpdate!)
+        : "--:--";
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // 👤 Bonjour utilisateur + date
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text("Bonjour, $userName", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(dateFormatted, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4F46E5).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text("Dernière mise à jour : $lastUpdate", style: const TextStyle(fontSize: 12, color: Color(0xFF4F46E5))),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              _buildMeasureCard("Glycémie", controller.latestGlycemia?.toStringAsFixed(1) ?? "--", "mmol/L", Icons.opacity, Colors.indigo),
+              const SizedBox(width: 8),
+              _buildMeasureCard("Tension", controller.latestTension ?? "--", "", Icons.favorite, Colors.orange),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildGlycemiaChart(controller),
+          const SizedBox(height: 16),
+          _buildBpChart(controller),
+        ],
+      ),
     );
   }
 
@@ -144,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 200,
               child: SfCartesianChart(
                 primaryXAxis: CategoryAxis(),
-                series: <CartesianSeries>[
+                series: <LineSeries>[
                   LineSeries<ChartData, String>(
                     dataSource: controller.glycemiaChartData,
                     xValueMapper: (ChartData data, _) => data.time,
@@ -175,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 200,
               child: SfCartesianChart(
                 primaryXAxis: CategoryAxis(),
-                series: <CartesianSeries>[
+                series: <LineSeries>[
                   LineSeries<BpChartData, String>(
                     name: "Systolique",
                     dataSource: controller.bpChartData,

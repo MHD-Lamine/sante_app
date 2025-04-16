@@ -34,10 +34,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     final response = await http.get(
       Uri.parse('${ApiService.baseUrl}/profile'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
     );
 
     if (response.statusCode == 200) {
@@ -60,7 +57,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Navigator.pushReplacementNamed(context, '/');
     }
   }
-/// Fonction pour aller à l'écran de modification du profil
+
+  /// Fonction pour aller à l'écran de modification du profil
   /// et recharger les données après retour
   void _goToEditProfile() {
     Navigator.pushNamed(context, '/edit-profile').then((_) {
@@ -68,31 +66,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       fetchProfile();
     });
   }
-/// Fonction pour aller à l'écran de changement de mot de passe
-    /// et recharger les données après retour
+
+  /// Fonction pour aller à l'écran de changement de mot de passe
+  /// et recharger les données après retour
   void _goToChangePassword() {
-      Navigator.pushNamed(context, '/change-password').then((_) {
-        // Recharger les données après retour
-        fetchProfile();
-      });
-    }
+    Navigator.pushNamed(context, '/change-password').then((_) {
+      // Recharger les données après retour
+      fetchProfile();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (errorMessage != null) {
       return Scaffold(
         appBar: AppBar(title: const Text("Profil")),
         body: Center(
-          child: Text(
-            errorMessage!,
-            style: const TextStyle(color: Colors.red),
-          ),
+          child: Text(errorMessage!, style: const TextStyle(color: Colors.red)),
         ),
       );
     }
@@ -123,11 +117,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Nom : ${userData?['name']}", style: const TextStyle(fontSize: 18)),
+            Text(
+              "Nom : ${userData?['name']}",
+              style: const TextStyle(fontSize: 18),
+            ),
             const SizedBox(height: 8),
-            Text("Email : ${userData?['email']}", style: const TextStyle(fontSize: 18)),
+            Text(
+              "Email : ${userData?['email']}",
+              style: const TextStyle(fontSize: 18),
+            ),
             const SizedBox(height: 8),
-            Text("Rôle : ${userData?['role']}", style: const TextStyle(fontSize: 18)),
+            Text(
+              "Rôle : ${userData?['role']}",
+              style: const TextStyle(fontSize: 18),
+            ),
           ],
         ),
       ),
