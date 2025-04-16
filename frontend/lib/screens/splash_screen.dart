@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:Sante/services/api_service.dart';
+import 'package:provider/provider.dart';
+import 'package:Sante/controllers/AuthController.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,16 +13,19 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAuth();
+    _checkAuthStatus();
   }
 
-  Future<void> _checkAuth() async {
-    final token = await ApiService.getToken();
+  Future<void> _checkAuthStatus() async {
+    final auth = Provider.of<AuthController>(context, listen: false);
+    await auth.initialize();
 
-    if (token != null) {
-      Navigator.pushReplacementNamed(context, '/home'); // ✅ Auto-login
+    await Future.delayed(const Duration(seconds: 1)); // Effet splash
+
+    if (auth.isAuthenticated) {
+      Navigator.pushReplacementNamed(context, '/home');
     } else {
-      Navigator.pushReplacementNamed(context, '/'); // ⛔ Pas de token : login
+      Navigator.pushReplacementNamed(context, '/');
     }
   }
 
@@ -30,13 +34,14 @@ class _SplashScreenState extends State<SplashScreen> {
     return const Scaffold(
       backgroundColor: Color(0xFF4F46E5),
       body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(color: Colors.white),
-            SizedBox(height: 20),
-            Text("Chargement...", style: TextStyle(color: Colors.white)),
-          ],
+        child: Text(
+          'SantéTrack',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Pacifico',
+          ),
         ),
       ),
     );
