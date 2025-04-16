@@ -1,25 +1,29 @@
-import 'package:Sante/screens/splash_screen.dart';
+import 'package:Sante/controllers/AuthController.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:Sante/controllers/home_controller.dart';
-import 'package:Sante/screens/home_screen.dart';
+
+import 'package:Sante/screens/splash_screen.dart';
 import 'package:Sante/screens/login_screen.dart';
-import 'package:Sante/screens/profile_screen.dart';
-import 'package:Sante/screens/edit_profile_screen.dart';
-import 'package:Sante/screens/change_password_screen.dart';
+import 'package:Sante/screens/home_screen.dart';
+
+
+import 'package:Sante/controllers/measure_controller.dart';
+import 'package:Sante/controllers/user_controller.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🌍 Chargement des données de langue française
+  // 🌍 Charger la configuration des dates pour la langue française
   await initializeDateFormatting('fr_FR');
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => HomeController()),
+        ChangeNotifierProvider(create: (_) => AuthController()),
+        ChangeNotifierProvider(create: (_) => MeasureController()),
+        ChangeNotifierProvider(create: (_) => UserController()),
       ],
       child: const MyApp(),
     ),
@@ -52,9 +56,7 @@ class MyApp extends StatelessWidget {
         '/splash': (context) => const SplashScreen(),
         '/': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
-        // '/profile': (context) => const ProfileScreen(),
-        // '/edit-profile': (context) => const EditProfileScreen(),
-        // '/change-password': (context) => const ChangePasswordScreen(),
+        
       },
     );
   }

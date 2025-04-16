@@ -1,11 +1,12 @@
-import 'package:Sante/models/chart_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:Sante/services/api_service.dart';
-import 'package:Sante/controllers/home_controller.dart';
+
+import '../models/chart_data.dart';
+import '../controllers/measure_controller.dart';
+import '../services/api_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,18 +26,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    final token = await ApiService.getToken();
-    final name = await ApiService.getUserName(); 
+    final name = await ApiService.getUserNameFromStorage();
     setState(() {
       userName = name ?? "Utilisateur";
     });
 
-    Provider.of<HomeController>(context, listen: false).fetchLatestMeasure();
+    Provider.of<MeasureController>(context, listen: false).loadMeasures();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<HomeController>(
+    return Consumer<MeasureController>(
       builder: (context, controller, _) {
         final pages = [
           _buildDashboard(controller),
@@ -55,15 +55,11 @@ class _HomeScreenState extends State<HomeScreen> {
               IconButton(
                 icon: const Icon(FlutterRemix.notification_3_line),
                 tooltip: "Alertes",
-                onPressed: () {
-                  setState(() => _currentIndex = 4);
-                },
+                onPressed: () => setState(() => _currentIndex = 4),
               ),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: () {
-                  setState(() => _currentIndex = 5);
-                },
+                onTap: () => setState(() => _currentIndex = 5),
                 child: CircleAvatar(
                   backgroundColor: Colors.indigo[300],
                   child: const Icon(FlutterRemix.user_line, color: Colors.white),
@@ -72,60 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(width: 16),
             ],
           ),
-          drawer: Drawer(
-            child: ListView(
-              children: [
-                const DrawerHeader(
-                  decoration: BoxDecoration(color: Color(0xFF4F46E5)),
-                  child: Text("SantéTrack", style: TextStyle(color: Colors.white, fontSize: 24)),
-                ),
-                ListTile(
-                  leading: const Icon(FlutterRemix.dashboard_line),
-                  title: const Text("Tableau de bord"),
-                  onTap: () {
-                    setState(() => _currentIndex = 0);
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(FlutterRemix.heart_pulse_line),
-                  title: const Text("Mes mesures"),
-                  onTap: () {
-                    setState(() => _currentIndex = 1);
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(FlutterRemix.medicine_bottle_line),
-                  title: const Text("Médicaments"),
-                  onTap: () {
-                    setState(() => _currentIndex = 2);
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(FlutterRemix.calendar_check_line),
-                  title: const Text("Rendez-vous"),
-                  onTap: () {
-                    setState(() => _currentIndex = 3);
-                    Navigator.pop(context);
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(FlutterRemix.logout_box_line),
-                  title: const Text("Déconnexion"),
-                  onTap: () async {
-                    await ApiService.logout();
-                    if (context.mounted) {
-                      Navigator.pushReplacementNamed(context, '/');
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          body: controller.loading
+          drawer: _buildDrawer(),
+          body: controller.isLoading
               ? const Center(child: CircularProgressIndicator())
               : controller.error != null
                   ? Center(child: Text(controller.error!))
@@ -134,9 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
             currentIndex: _currentIndex > 3 ? 0 : _currentIndex,
             selectedItemColor: const Color(0xFF4F46E5),
             unselectedItemColor: Colors.grey,
-            onTap: (index) {
-              setState(() => _currentIndex = index);
-            },
+            onTap: (index) => setState(() => _currentIndex = index),
             items: const [
               BottomNavigationBarItem(icon: Icon(Icons.home), label: "Accueil"),
               BottomNavigationBarItem(icon: Icon(Icons.show_chart), label: "Historique"),
@@ -149,9 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDashboard(HomeController controller) {
-    final now = DateTime.now();
-    final dateFormatted = DateFormat('d MMMM yyyy', 'fr_FR').format(now);
+  Widget _buildDashboard(MeasureController controller) {
+    final dateFormatted = DateFormat('d MMMM yyyy', 'fr_FR').format(DateTime.now());
     final lastUpdate = controller.lastUpdate != null
         ? DateFormat('HH:mm').format(controller.lastUpdate!)
         : "--:--";
@@ -231,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildGlycemiaChart(HomeController controller) {
+  Widget _buildGlycemiaChart(MeasureController controller) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -262,7 +203,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildBpChart(HomeController controller) {
+  Widget _buildBpChart(MeasureController controller) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -296,6 +237,62 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      child: ListView(
+        children: [
+          const DrawerHeader(
+            decoration: BoxDecoration(color: Color(0xFF4F46E5)),
+            child: Text("SantéTrack", style: TextStyle(color: Colors.white, fontSize: 24)),
+          ),
+          ListTile(
+            leading: const Icon(FlutterRemix.dashboard_line),
+            title: const Text("Tableau de bord"),
+            onTap: () {
+              setState(() => _currentIndex = 0);
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(FlutterRemix.heart_pulse_line),
+            title: const Text("Mes mesures"),
+            onTap: () {
+              setState(() => _currentIndex = 1);
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(FlutterRemix.medicine_bottle_line),
+            title: const Text("Médicaments"),
+            onTap: () {
+              setState(() => _currentIndex = 2);
+              Navigator.pop(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(FlutterRemix.calendar_check_line),
+            title: const Text("Rendez-vous"),
+            onTap: () {
+              setState(() => _currentIndex = 3);
+              Navigator.pop(context);
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(FlutterRemix.logout_box_line),
+            title: const Text("Déconnexion"),
+            onTap: () async {
+              await ApiService.logout();
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, '/');
+              }
+            },
+          ),
+        ],
       ),
     );
   }

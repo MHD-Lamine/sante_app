@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:Sante/services/api_service.dart';
+import 'package:provider/provider.dart';
+import '../controllers/user_controller.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -11,129 +10,66 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  final _nameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
-  String? message;
-  bool loading = false;
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    final user = Provider.of<UserController>(context, listen: false);
+    nameController.text = user.name ?? '';
+    emailController.text = user.email ?? '';
   }
 
-  Future<void> _loadProfile() async {
-    final token = await ApiService.getToken();
-    final response = await http.get(
-      Uri.parse('${ApiService.baseUrl}/profile'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+  Future<void> _saveChanges() async {
+    final user = Provider.of<UserController>(context, listen: false);
+    final success = await user.updateProfile(
+      nameController.text.trim(),
+      emailController.text.trim(),
     );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        _nameCtrl.text = data['name'];
-        _emailCtrl.text = data['email'];
-      });
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Profil mis à jour avec succès")),
+      );
+      Navigator.pop(context);
     }
-  }
-
-  Future<void> _updateProfile() async {
-    final token = await ApiService.getToken();
-    setState(() {
-      loading = true;
-      message = null;
-    });
-
-    final body = {
-      "name": _nameCtrl.text.trim(),
-      "email": _emailCtrl.text.trim(),
-    };
-
-    if (_passwordCtrl.text.isNotEmpty) {
-      body["password"] = _passwordCtrl.text;
-    }
-
-    final response = await http.put(
-      Uri.parse('${ApiService.baseUrl}/profile'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode(body),
-    );
-
-    setState(() => loading = false);
-
-    if (response.statusCode == 200) {
-      setState(() {
-        message = "✅ Profil mis à jour avec succès !";
-      });
-
-      // Retour après un délai
-      Future.delayed(const Duration(seconds: 2), () {
-        Navigator.pop(context, true); // retour vers ProfileScreen
-      });
-    } else {
-      setState(() {
-        message = "❌ Erreur : ${response.statusCode}";
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _emailCtrl.dispose();
-    _passwordCtrl.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Modifier le profil")),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameCtrl,
-              decoration: const InputDecoration(labelText: "Nom"),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _emailCtrl,
-              decoration: const InputDecoration(labelText: "Email"),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _passwordCtrl,
-              decoration: const InputDecoration(labelText: "Nouveau mot de passe (facultatif)"),
-              obscureText: true,
-            ),
-            const SizedBox(height: 24),
-            if (message != null)
-              Text(
-                message!,
-                style: TextStyle(
-                  color: message!.startsWith("✅") ? Colors.green : Colors.red,
+    return Consumer<UserController>(
+      builder: (context, user, _) {
+        return Scaffold(
+          appBar: AppBar(title: const Text("Modifier le profil")),
+          body: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: "Nom"),
                 ),
-              ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: loading ? null : _updateProfile,
-              child: loading
-                  ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Enregistrer"),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: "Email"),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 24),
+                if (user.error != null)
+                  Text(user.error!, style: const TextStyle(color: Colors.red)),
+
+                ElevatedButton(
+                  onPressed: user.isLoading ? null : _saveChanges,
+                  child: user.isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Enregistrer"),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

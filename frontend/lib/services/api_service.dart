@@ -118,4 +118,22 @@ class ApiService {
       throw Exception("Erreur profil : ${response.statusCode}");
     }
   }
+
+  static Future<bool> updateProfile(Map<String, dynamic> data) async {
+  final token = await getToken();
+  if (token == null) throw Exception("Token manquant");
+
+  final url = Uri.parse('$baseUrl/profile');
+  final response = await http.put(
+    url,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode(data),
+  );
+
+  return response.statusCode == 200;
+}
+
 }
