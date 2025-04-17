@@ -1,4 +1,5 @@
 import 'package:Sante/controllers/AuthController.dart';
+import 'package:Sante/controllers/medication_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -24,6 +25,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthController()),
         ChangeNotifierProvider(create: (_) => MeasureController()),
         ChangeNotifierProvider(create: (_) => UserController()),
+        ChangeNotifierProvider(create: (_) => MedicationController()),
+
       ],
       child: const MyApp(),
     ),

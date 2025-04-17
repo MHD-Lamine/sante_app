@@ -1,3 +1,5 @@
+import 'package:Sante/controllers/medication_controller.dart';
+import 'package:Sante/models/medication.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +33,8 @@ class _HomeScreenState extends State<HomeScreen> {
       userName = name ?? "Utilisateur";
     });
 
-    Provider.of<MeasureController>(context, listen: false).loadMeasures();
+    Provider.of<MeasureController>(context, listen: false).loadMeasures(); //Chargement des mesures
+    Provider.of<MedicationController>(context, listen: false).loadTodayMedications(); //Chargement des médicaments
   }
 
   @override
@@ -136,6 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildGlycemiaChart(controller),
           const SizedBox(height: 16),
           _buildBpChart(controller),
+
+          _buildMedicationSection(),
         ],
       ),
     );
@@ -241,6 +246,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+/// Widget pour le menu latéral (Drawer)
+  /// avec les différentes sections de l'application
   Widget _buildDrawer() {
     return Drawer(
       child: ListView(
@@ -296,4 +303,105 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  /// Widget pour afficher la section des médicaments
+  /// avec un badge indiquant s'il a été pris ou non
+  Widget _buildMedicationSection() {
+  return Consumer<MedicationController>(
+    builder: (context, controller, _) {
+      if (controller.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (controller.error != null) {
+        return Text(controller.error!, style: const TextStyle(color: Colors.red));
+      }
+
+      final meds = controller.todayMedications;
+      if (meds.isEmpty) {
+        return const Text("Aucun médicament prévu aujourd'hui.");
+      }
+
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Médicaments aujourd'hui", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text("Voir tout", style: TextStyle(color: Color(0xFF4F46E5))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...meds.map(_buildMedicationTile).toList(),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+/// Widget pour afficher chaque médicament
+/// avec un badge indiquant s'il a été pris ou non
+/// et un bouton pour le marquer comme pris
+Widget _buildMedicationTile(Medication med) {
+  return Card(
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    margin: const EdgeInsets.only(bottom: 8),
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("${med.name} (${med.dosage})", style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          ...med.schedules.map((sched) {
+            final isTaken = sched.taken;
+            final badgeColor = isTaken ? Colors.green : Colors.grey;
+            final badgeText = isTaken ? "Pris" : sched.time;
+
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                backgroundColor: badgeColor.withOpacity(0.1),
+                child: Icon(FlutterRemix.time_line, color: badgeColor),
+              ),
+              title: Text("Heure : ${sched.time}"),
+              subtitle: sched.note != null ? Text(sched.note!) : null,
+              trailing: isTaken
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: badgeColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text("Pris", style: TextStyle(color: badgeColor, fontSize: 12)),
+                    )
+                  : ElevatedButton(
+                      onPressed: () {
+                        Provider.of<MedicationController>(context, listen: false)
+                            .markScheduleAsTaken(med.id, sched.id);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4F46E5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text("Prendre", style: TextStyle(fontSize: 12)),
+                    ),
+            );
+          }).toList(),
+        ],
+      ),
+    ),
+  );
+}
+
 }

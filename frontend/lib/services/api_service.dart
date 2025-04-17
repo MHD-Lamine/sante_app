@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:Sante/models/medication.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -6,21 +7,16 @@ class ApiService {
   static const String baseUrl = 'http://10.0.2.2:5000';
   static final storage = FlutterSecureStorage();
 
-  // 🔐 Obtenir le token JWT
-  static Future<String?> getToken() async {
-    return await storage.read(key: 'token');
-  }
+  // === Authentification ===
+  static Future<String?> getToken() async => await storage.read(key: 'token');
 
-  // 🔐 Obtenir l'ID utilisateur
   static Future<int?> getUserId() async {
     final userId = await storage.read(key: 'user_id');
     return userId != null ? int.tryParse(userId) : null;
   }
 
-  // 🔐 Connexion utilisateur
   static Future<bool> login(String email, String password) async {
     final url = Uri.parse('$baseUrl/login');
-
     try {
       final response = await http.post(
         url,
@@ -44,44 +40,19 @@ class ApiService {
     }
   }
 
-  // 🔐 Déconnexion
-  static Future<void> logout() async {
-    await storage.deleteAll();
-  }
+  static Future<void> logout() async => await storage.deleteAll();
 
-  // 📊 Récupérer les mesures pour un utilisateur
-  static Future<List<dynamic>> fetchMeasures(int userId) async {
-    final token = await getToken();
-    if (token == null) throw Exception("Token manquant");
+  // === Utilisateur ===
+  static Future<String?> getUserNameFromStorage() async =>
+      await storage.read(key: 'user_name');
 
-    final url = Uri.parse('$baseUrl/measures/$userId');
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      throw Exception("Erreur fetch measures : ${response.statusCode} ${response.body}");
-    }
-  }
-
-  // 👤 Récupérer le nom de l'utilisateur depuis l'API
   static Future<String?> getUserName() async {
     final token = await getToken();
     if (token == null) return null;
 
-    final url = Uri.parse('$baseUrl/profile');
     final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+      Uri.parse('$baseUrl/profile'),
+      headers: {'Authorization': 'Bearer $token'},
     );
 
     if (response.statusCode == 200) {
@@ -93,23 +64,13 @@ class ApiService {
     }
   }
 
-  // 👤 Lire le nom de l'utilisateur depuis le stockage local
-  static Future<String?> getUserNameFromStorage() async {
-    return await storage.read(key: 'user_name');
-  }
-
-  // 🔁 Récupérer les infos complètes du profil
   static Future<Map<String, dynamic>> fetchProfile() async {
     final token = await getToken();
     if (token == null) throw Exception("Token manquant");
 
-    final url = Uri.parse('$baseUrl/profile');
     final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+      Uri.parse('$baseUrl/profile'),
+      headers: {'Authorization': 'Bearer $token'},
     );
 
     if (response.statusCode == 200) {
@@ -120,20 +81,75 @@ class ApiService {
   }
 
   static Future<bool> updateProfile(Map<String, dynamic> data) async {
-  final token = await getToken();
-  if (token == null) throw Exception("Token manquant");
+    final token = await getToken();
+    if (token == null) throw Exception("Token manquant");
 
-  final url = Uri.parse('$baseUrl/profile');
-  final response = await http.put(
-    url,
-    headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode(data),
-  );
+    final response = await http.put(
+      Uri.parse('$baseUrl/profile'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode(data),
+    );
 
-  return response.statusCode == 200;
-}
+    return response.statusCode == 200;
+  }
 
+  // === Mesures ===
+  static Future<List<dynamic>> fetchMeasures(int userId) async {
+    final token = await getToken();
+    if (token == null) throw Exception("Token manquant");
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/measures/$userId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception("Erreur fetch measures : ${response.statusCode} ${response.body}");
+    }
+  }
+
+  // === Médicaments & horaires ===
+  static Future<List<Medication>> fetchTodayMedications(int userId) async {
+    final token = await getToken();
+    if (token == null) throw Exception("Token manquant");
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/medications/$userId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((json) => Medication.fromJson(json)).toList();
+    } else {
+      throw Exception('Erreur lors du chargement des médicaments : ${response.body}');
+    }
+  }
+
+  /// ✅ Marquer UNE prise (schedule) comme faite
+  static Future<bool> takeSchedule(int scheduleId) async {
+    final token = await getToken();
+    if (token == null) {
+      print("❌ Token manquant pour PUT /medications/schedules/$scheduleId/take");
+      return false;
+    }
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/medications/schedules/$scheduleId/take'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print("🔁 Réponse takeSchedule($scheduleId): ${response.statusCode} - ${response.body}");
+
+    return response.statusCode == 200;
+  }
+  
 }

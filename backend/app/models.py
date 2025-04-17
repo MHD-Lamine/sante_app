@@ -1,4 +1,3 @@
-# Importation du module db initialisé dans __init__.py
 from app import db
 
 # ============================
@@ -12,11 +11,12 @@ class User(db.Model):
     role = db.Column(db.String(20), default="patient")
     last_password_change = db.Column(db.DateTime)
 
-    # Relations vers les autres tables
     measures = db.relationship('Measure', backref='user', lazy=True)
     reminders = db.relationship('Reminder', backref='user', lazy=True)
     alerts = db.relationship('Alert', backref='user', lazy=True)
     reports = db.relationship('Report', backref='user', lazy=True)
+    medications = db.relationship('Medication', backref='user', lazy=True)
+    appointments = db.relationship('Appointment', backref='user', lazy=True)
 
 # ============================
 # 🔹 Modèle : Mesure médicale
@@ -25,9 +25,8 @@ class Measure(db.Model):
     __tablename__ = 'measure'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Lien vers un utilisateur
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-    # Données médicales
     date = db.Column(db.DateTime, nullable=False)
     glycemia = db.Column(db.Float)
     systolic = db.Column(db.Float)
@@ -35,56 +34,71 @@ class Measure(db.Model):
     temperature = db.Column(db.Float)
 
 # ============================
-# 🔹 Modèle : Rappel (notification programmée)
+# 🔹 Rappel (notification)
 # ============================
 class Reminder(db.Model):
     __tablename__ = 'reminder'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
     title = db.Column(db.String(100))
     description = db.Column(db.Text)
-    date_time = db.Column(db.DateTime, nullable=False)  # Quand le rappel doit être déclenché
+    date_time = db.Column(db.DateTime, nullable=False)
 
 # ============================
-# 🔹 Modèle : Alerte automatique
+# 🔹 Alerte automatique
 # ============================
 class Alert(db.Model):
     __tablename__ = 'alert'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    type = db.Column(db.String(100))        # Type d'alerte : tension haute, hypoglycémie, etc.
-    level = db.Column(db.String(50))        # Critique, modéré, léger...
-    message = db.Column(db.Text)            # Message à afficher/envoyer
-    date_sent = db.Column(db.DateTime)      # Date de génération de l'alerte
+    type = db.Column(db.String(100))
+    level = db.Column(db.String(50))
+    message = db.Column(db.Text)
+    date_sent = db.Column(db.DateTime)
 
 # ============================
-# 🔹 Modèle : Rapport généré
+# 🔹 Rapport généré
 # ============================
 class Report(db.Model):
     __tablename__ = 'report'
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
     date_generated = db.Column(db.DateTime, nullable=False)
-    content = db.Column(db.Text)            # Contenu brut ou lien vers un PDF
+    content = db.Column(db.Text)
 
+# ============================
+# 🔹 Médicament
+# ============================
 class Medication(db.Model):
+    __tablename__ = 'medication'
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.Text, nullable=False)
     dosage = db.Column(db.Text)
-    time = db.Column(db.Text)  # "matin", "midi", "soir"
-    taken = db.Column(db.Boolean, default=False)
+    note = db.Column(db.Text)
     date_prescribed = db.Column(db.DateTime)
+
+    schedules = db.relationship('MedicationSchedule', backref='medication', lazy=True, cascade='all, delete-orphan')
+
+# ============================
+# 🔹 Horaire de prise (schedules)
+# ============================
+class MedicationSchedule(db.Model):
+    __tablename__ = 'medication_schedule'
+
+    id = db.Column(db.Integer, primary_key=True)
+    medication_id = db.Column(db.Integer, db.ForeignKey('medication.id', ondelete='CASCADE'), nullable=False)
+    time = db.Column(db.Time, nullable=False)
+    taken = db.Column(db.Boolean, default=False)
     note = db.Column(db.Text)
 
-    user = db.relationship("User", backref="medications")
-
+# ============================
+# 🔹 Rendez-vous
+# ============================
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -94,10 +108,11 @@ class Appointment(db.Model):
     date_time = db.Column(db.DateTime)
     notes = db.Column(db.Text)
 
-    user = db.relationship("User", backref="appointments")
-
+# ============================
+# 🔹 Conseils santé
+# ============================
 class HealthTip(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    type = db.Column(db.Text)  # ex: "activité", "alimentation", "repos"
+    type = db.Column(db.Text)  # ex: "activité", "alimentation", etc.
     created_at = db.Column(db.DateTime, server_default=db.func.now())
