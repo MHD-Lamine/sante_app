@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'package:Sante/models/health_tip.dart';
 import 'package:Sante/models/medication.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:Sante/models/appointment.dart';
 
 class ApiService {
   static const String baseUrl = 'http://10.0.2.2:5000';
@@ -151,5 +153,52 @@ class ApiService {
 
     return response.statusCode == 200;
   }
+
+  static Future<List<Appointment>> fetchUpcomingAppointments() async {
+  final token = await getToken();
+  final userId = await getUserId();
+
+  if (token == null || userId == null) {
+    throw Exception("Token ou ID utilisateur manquant");
+  }
+
+  final response = await http.get(
+    Uri.parse('$baseUrl/appointments/$userId'),
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final List data = jsonDecode(response.body);
+    return data.map((item) => Appointment.fromJson(item)).toList();
+  } else {
+    throw Exception('Erreur lors du chargement des rendez-vous');
+  }
+}
+
+// 📘 Récupérer les conseils santé depuis l'API
+static Future<List<HealthTip>> fetchHealthTips() async {
+  final token = await getToken();
+  if (token == null) throw Exception("Token manquant");
+
+  final url = Uri.parse('$baseUrl/healthtips');
+  final response = await http.get(
+    url,
+    headers: {
+      'Authorization': 'Bearer $token',
+      'Accept': 'application/json',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    final List jsonData = jsonDecode(response.body);
+    return jsonData.map((e) => HealthTip.fromJson(e)).toList();
+  } else {
+    throw Exception("Erreur fetch health tips : ${response.statusCode}");
+  }
+}
+
   
 }

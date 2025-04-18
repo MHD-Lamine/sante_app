@@ -293,6 +293,22 @@ def get_appointments():
         } for a in appts
     ])
 
+@main.route("/appointments/<int:user_id>", methods=["GET"])
+@jwt_required()
+def get_appointments_for_user(user_id):  # ✅ Nouveau nom unique
+    appointments = Appointment.query.filter_by(user_id=user_id).order_by(Appointment.date_time).all()
+    return jsonify([
+        {
+            "id": a.id,
+            "title": a.title,
+            "doctor": a.doctor,
+            "location": a.location,
+            "date_time": a.date_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "notes": a.notes
+        } for a in appointments
+    ])
+
+
 @main.route("/appointments/<int:appt_id>", methods=["DELETE"])
 @jwt_required()
 def delete_appointment(appt_id):
@@ -302,14 +318,14 @@ def delete_appointment(appt_id):
     return jsonify({"message": "Rendez-vous supprimé"}), 200
 
 # === Conseils santé
-@main.route("/health_tips", methods=["GET"])
+@main.route("/healthtips", methods=["GET"])
 def get_health_tips():
     tips = HealthTip.query.order_by(HealthTip.created_at.desc()).limit(5).all()
     return jsonify([
         {
             "id": t.id,
-            "content": t.content,
             "type": t.type,
-            "created_at": t.created_at.strftime("%Y-%m-%d")
+            "content": t.content,
+            "created_at": t.created_at.strftime("%Y-%m-%d %H:%M:%S")
         } for t in tips
     ])

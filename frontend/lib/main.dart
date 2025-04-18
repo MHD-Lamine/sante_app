@@ -1,9 +1,12 @@
 import 'package:Sante/controllers/AuthController.dart';
+import 'package:Sante/controllers/appointment_controller.dart';
+import 'package:Sante/controllers/health_tip_controller.dart';
 import 'package:Sante/controllers/medication_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
 
 import 'package:Sante/screens/splash_screen.dart';
 import 'package:Sante/screens/login_screen.dart';
@@ -26,6 +29,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MeasureController()),
         ChangeNotifierProvider(create: (_) => UserController()),
         ChangeNotifierProvider(create: (_) => MedicationController()),
+        ChangeNotifierProvider(create: (_) => AppointmentController()),
+        ChangeNotifierProvider(create: (_) => HealthTipController()),
 
       ],
       child: const MyApp(),

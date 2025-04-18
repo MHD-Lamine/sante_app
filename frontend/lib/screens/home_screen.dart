@@ -1,4 +1,7 @@
+import 'package:Sante/controllers/health_tip_controller.dart';
 import 'package:Sante/controllers/medication_controller.dart';
+import 'package:Sante/models/appointment.dart';
+import 'package:Sante/models/health_tip.dart';
 import 'package:Sante/models/medication.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
@@ -6,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+import 'package:Sante/controllers/appointment_controller.dart';
 import '../models/chart_data.dart';
 import '../controllers/measure_controller.dart';
 import '../services/api_service.dart';
@@ -35,6 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Provider.of<MeasureController>(context, listen: false).loadMeasures(); //Chargement des mesures
     Provider.of<MedicationController>(context, listen: false).loadTodayMedications(); //Chargement des médicaments
+    Provider.of<AppointmentController>(context, listen: false).loadAppointments(); //Chargement des rendez-vous
+    Provider.of<HealthTipController>(context, listen: false).fetchTips(); //Chargement des conseils santé
+
+
   }
 
   @override
@@ -141,6 +149,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildBpChart(controller),
 
           _buildMedicationSection(),
+          _buildAppointmentSection(),
+          _buildHealthTipsSection(),
+
         ],
       ),
     );
@@ -400,6 +411,165 @@ Widget _buildMedicationTile(Medication med) {
           }).toList(),
         ],
       ),
+    ),
+  );
+}
+
+Widget _buildAppointmentSection() {
+  return Consumer<AppointmentController>(
+    builder: (context, controller, _) {
+      if (controller.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (controller.error != null) {
+        return Text("Erreur : ${controller.error}", style: const TextStyle(color: Colors.red));
+      }
+
+      if (controller.appointments.isEmpty) {
+        return const Text("Aucun rendez-vous à venir.");
+      }
+
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Prochains rendez-vous", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text("Voir tout", style: TextStyle(color: Color(0xFF4F46E5))),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              ...controller.appointments.map(_buildAppointmentTile).toList(),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildAppointmentTile(Appointment appt) {
+  final isTomorrow = appt.dateTime.difference(DateTime.now()).inDays == 1;
+  final isToday = appt.dateTime.day == DateTime.now().day;
+
+  final time = DateFormat("HH:mm").format(appt.dateTime);
+  final dayText = isToday ? "Aujourd’hui" : isTomorrow ? "Demain" : DateFormat("d MMM").format(appt.dateTime);
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.all(8),
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.indigo.shade100),
+      borderRadius: BorderRadius.circular(8),
+      color: Colors.indigo.shade50.withOpacity(0.3),
+    ),
+    child: Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: Colors.indigo.shade100,
+          child: const Icon(FlutterRemix.stethoscope_line, color: Color(0xFF4F46E5)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(appt.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(appt.doctor ?? "", style: const TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(dayText, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+            Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+          ],
+        )
+      ],
+    ),
+  );
+}
+
+Widget _buildHealthTipsSection() {
+  return Consumer<HealthTipController>(
+    builder: (context, controller, _) {
+      if (controller.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (controller.error != null) {
+        return Text(controller.error!, style: const TextStyle(color: Colors.red));
+      }
+
+      final tips = controller.tips;
+      if (tips.isEmpty) {
+        return const Text("Aucun conseil santé disponible pour le moment.");
+      }
+
+      return Card(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.only(top: 16),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Conseils santé", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              ...tips.map((tip) => _buildTipTile(tip)).toList(),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildTipTile(HealthTip tip) {
+  IconData icon = Icons.health_and_safety;
+  Color color = Colors.blue;
+
+  if (tip.type == "activité") {
+    icon = Icons.directions_walk;
+    color = Colors.green;
+  } else if (tip.type == "alimentation") {
+    icon = Icons.restaurant;
+    color = Colors.orange;
+  } else if (tip.type == "repos") {
+    icon = Icons.nightlight_round;
+    color = Colors.purple;
+  }
+
+  return Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          backgroundColor: color.withOpacity(0.15),
+          child: Icon(icon, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(tip.type[0].toUpperCase() + tip.type.substring(1), style: TextStyle(color: color, fontWeight: FontWeight.w600)),
+              Text(tip.content, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+            ],
+          ),
+        ),
+      ],
     ),
   );
 }
