@@ -3,6 +3,7 @@ import 'package:Sante/controllers/medication_controller.dart';
 import 'package:Sante/models/appointment.dart';
 import 'package:Sante/models/health_tip.dart';
 import 'package:Sante/models/medication.dart';
+import 'package:Sante/widgets/add_measure_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_remix/flutter_remix.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,7 @@ import 'package:Sante/controllers/appointment_controller.dart';
 import '../models/chart_data.dart';
 import '../controllers/measure_controller.dart';
 import '../services/api_service.dart';
+import 'dart:async';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,11 +26,23 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   String userName = "Utilisateur";
+  Timer? refreshTimer;
+
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    
+    refreshTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      _loadData(); // recharge toutes les données
+    });
+
+    @override
+    void dispose() {
+      refreshTimer?.cancel(); // arrêter le timer quand la page se ferme
+      super.dispose();
+    }
   }
 
   Future<void> _loadData() async {
@@ -97,6 +111,42 @@ class _HomeScreenState extends State<HomeScreen> {
               BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: "RDV"),
             ],
           ),
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: const Color(0xFF4F46E5),
+            onPressed: () async {
+              final result = await showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (_) => const AddMeasureForm(),
+              );
+
+              // ✅ Recharge toute la page si on a bien ajouté une mesure
+              if (result == true && mounted) {
+                await _loadData(); // <- recharge les mesures, rendez-vous, conseils, etc.
+
+                            // ✅ Affiche un SnackBar ICI (dans le bon contexte)
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("✅ Mesures enregistrées avec succès"),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              } else if (result == false && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("❌ Erreur lors de l'enregistrement des mesures"),
+                    backgroundColor: Colors.red,
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
+            },
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
         );
       },
     );
@@ -155,6 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+
   }
 
   Widget _buildMeasureCard(String label, String value, String unit, IconData icon, Color color) {
@@ -668,5 +719,17 @@ Widget _buildTipTile(HealthTip tip) {
     ),
   );
 }
+
+void _showAddMeasureDialog(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => const AddMeasureForm(),
+  );
+}
+
 
 }

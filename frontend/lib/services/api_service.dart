@@ -198,7 +198,24 @@ static Future<List<HealthTip>> fetchHealthTips() async {
   } else {
     throw Exception("Erreur fetch health tips : ${response.statusCode}");
   }
+
 }
+
+static Future<void> post(String endpoint, Map<String, dynamic> data) async {
+  final token = await getToken();
+  final response = await http.post(
+    Uri.parse('$baseUrl$endpoint'),
+    headers: {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    },
+    body: jsonEncode(data),
+  );
+  if (response.statusCode >= 400) {
+    throw Exception("Erreur : ${response.body}");
+  }
+}
+
 
   
 }
