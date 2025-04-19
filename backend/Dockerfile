@@ -10,6 +10,9 @@ COPY requirements.txt .
 # Installation des dépendances Python
 RUN pip install --no-cache-dir -r requirements.txt
 
+RUN mkdir -p /var/log && touch /var/log/cron.log
+
+
 # Copie tout le reste du code dans le conteneur
 COPY . .
 

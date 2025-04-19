@@ -1,26 +1,31 @@
-import 'package:Sante/controllers/AuthController.dart';
-import 'package:Sante/controllers/appointment_controller.dart';
-import 'package:Sante/controllers/health_tip_controller.dart';
-import 'package:Sante/controllers/medication_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+// 📦 Services & Controllers
+import 'package:Sante/services/notification_service.dart';
+import 'package:Sante/controllers/AuthController.dart';
+import 'package:Sante/controllers/measure_controller.dart';
+import 'package:Sante/controllers/user_controller.dart';
+import 'package:Sante/controllers/medication_controller.dart';
+import 'package:Sante/controllers/appointment_controller.dart';
+import 'package:Sante/controllers/health_tip_controller.dart';
 
+// 🖥️ Screens
 import 'package:Sante/screens/splash_screen.dart';
 import 'package:Sante/screens/login_screen.dart';
 import 'package:Sante/screens/home_screen.dart';
-
-
-import 'package:Sante/controllers/measure_controller.dart';
-import 'package:Sante/controllers/user_controller.dart';
+import 'package:Sante/screens/appointment_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🌍 Charger la configuration des dates pour la langue française
+  // 🌍 Initialisation des formats de date pour le français
   await initializeDateFormatting('fr_FR');
+
+  // 🔔 Initialisation du système de notification locale
+  // await NotificationService().init();
 
   runApp(
     MultiProvider(
@@ -31,7 +36,6 @@ void main() async {
         ChangeNotifierProvider(create: (_) => MedicationController()),
         ChangeNotifierProvider(create: (_) => AppointmentController()),
         ChangeNotifierProvider(create: (_) => HealthTipController()),
-
       ],
       child: const MyApp(),
     ),
@@ -64,7 +68,8 @@ class MyApp extends StatelessWidget {
         '/splash': (context) => const SplashScreen(),
         '/': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
-        
+        '/appointments': (context) => const AppointmentScreen(),
+        // Ajoute ici d'autres routes si nécessaire
       },
     );
   }

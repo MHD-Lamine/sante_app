@@ -1,4 +1,5 @@
 import 'medication_schedule.dart';
+import 'package:intl/intl.dart';
 
 class Medication {
   final int id;
@@ -40,5 +41,21 @@ class Medication {
       note: note ?? this.note,
       schedules: schedules ?? this.schedules,
     );
+  }
+
+  /// 🕒 Retourne l'heure de la première prise du médicament
+  DateTime? getFirstTime() {
+    try {
+      if (schedules.isEmpty) return null;
+      final parsedTimes = schedules
+          .map((s) => DateFormat("HH:mm").parse(s.time))
+          .toList()
+        ..sort((a, b) => a.compareTo(b));
+      final now = DateTime.now();
+      final first = parsedTimes.first;
+      return DateTime(now.year, now.month, now.day, first.hour, first.minute);
+    } catch (_) {
+      return null;
+    }
   }
 }

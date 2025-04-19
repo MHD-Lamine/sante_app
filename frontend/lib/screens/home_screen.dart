@@ -317,7 +317,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Widget pour afficher la section des médicaments
   /// avec un badge indiquant s'il a été pris ou non
-  Widget _buildMedicationSection() {
+Widget _buildMedicationSection() {
   return Consumer<MedicationController>(
     builder: (context, controller, _) {
       if (controller.isLoading) {
@@ -333,6 +333,33 @@ class _HomeScreenState extends State<HomeScreen> {
         return const Text("Aucun médicament prévu aujourd'hui.");
       }
 
+      final now = DateTime.now();
+
+      // Médicaments ayant au moins une prise dans la tranche horaire (ou en retard)
+      final visibleMeds = meds.where((med) {
+        return med.schedules.any((s) {
+          try {
+            final parts = s.time.split(":");
+            final hour = int.parse(parts[0]);
+            final minute = int.parse(parts[1]);
+            final schedTime = DateTime(now.year, now.month, now.day, hour, minute);
+
+            final isWithinRange = now.isAfter(schedTime.subtract(const Duration(minutes: 10))) &&
+                now.isBefore(schedTime.add(const Duration(minutes: 150)));
+
+            final isLate = !s.taken && now.isAfter(schedTime.add(const Duration(minutes: 5)));
+
+            return isWithinRange || isLate || s.taken;
+          } catch (_) {
+            return false;
+          }
+        });
+      }).toList();
+
+      if (visibleMeds.isEmpty) {
+        return const Text("Aucun médicament à prendre en ce moment.");
+      }
+
       return Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: Padding(
@@ -345,13 +372,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Text("Médicaments aujourd'hui", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() => _currentIndex = 2); // redirige vers Médicaments
+                    },
                     child: const Text("Voir tout", style: TextStyle(color: Color(0xFF4F46E5))),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              ...meds.map(_buildMedicationTile).toList(),
+              ...visibleMeds.map(_buildMedicationTile).toList(),
             ],
           ),
         ),
@@ -372,41 +401,77 @@ Widget _buildMedicationTile(Medication med) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("${med.name} (${med.dosage})", style: const TextStyle(fontWeight: FontWeight.w600)),
+          Text(
+            "${med.name} (${med.dosage})",
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
-          ...med.schedules.map((sched) {
-            final isTaken = sched.taken;
-            final badgeColor = isTaken ? Colors.green : Colors.grey;
-            final badgeText = isTaken ? "Pris" : sched.time;
 
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: CircleAvatar(
-                backgroundColor: badgeColor.withOpacity(0.1),
-                child: Icon(FlutterRemix.time_line, color: badgeColor),
-              ),
-              title: Text("Heure : ${sched.time}"),
-              subtitle: sched.note != null ? Text(sched.note!) : null,
-              trailing: isTaken
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: badgeColor.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text("Pris", style: TextStyle(color: badgeColor, fontSize: 12)),
-                    )
-                  : ElevatedButton(
-                      onPressed: () {
-                        Provider.of<MedicationController>(context, listen: false)
-                            .markScheduleAsTaken(med.id, sched.id);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4F46E5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      ),
-                      child: const Text("Prendre", style: TextStyle(fontSize: 12)),
+          // 🕒 Affichage des prises
+          ...med.schedules.map((sched) {
+            final now = DateTime.now();
+            final parts = sched.time.split(":");
+            final hour = int.tryParse(parts[0]) ?? 0;
+            final minute = int.tryParse(parts[1]) ?? 0;
+
+            final schedTime = DateTime(now.year, now.month, now.day, hour, minute);
+            final isTaken = sched.taken;
+            final isLate = !isTaken && now.isAfter(schedTime.add(const Duration(minutes: 15))); // ⚠️ En retard après 15 min
+            final isSoon = !isTaken && now.isAfter(schedTime.subtract(const Duration(minutes: 30))) && now.isBefore(schedTime.add(const Duration(hours: 1)));
+
+            final badgeColor = isTaken
+                ? Colors.green
+                : (isLate ? Colors.red : Colors.orange);
+
+            final badgeText = isTaken
+                ? "Pris"
+                : (isLate ? "En retard" : sched.time);
+
+            return Visibility(
+              visible: isTaken || isLate || isSoon,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: badgeColor.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: badgeColor.withOpacity(0.2),
+                    child: Icon(
+                      FlutterRemix.time_line,
+                      color: badgeColor,
                     ),
+                  ),
+                  title: Text("Heure : ${sched.time}"),
+                  subtitle: sched.note != null ? Text(sched.note!) : null,
+                  trailing: isTaken
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text("Pris", style: TextStyle(color: Colors.green, fontSize: 12)),
+                        )
+                      : isLate
+                          ? const Text("En retard", style: TextStyle(color: Colors.red, fontSize: 12))
+                          : ElevatedButton(
+                              onPressed: () {
+                                Provider.of<MedicationController>(context, listen: false)
+                                    .markScheduleAsTaken(med.id, sched.id);
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4F46E5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              child: const Text("Prendre", style: TextStyle(fontSize: 12)),
+                            ),
+                ),
+              ),
             );
           }).toList(),
         ],
@@ -414,6 +479,7 @@ Widget _buildMedicationTile(Medication med) {
     ),
   );
 }
+
 
 Widget _buildAppointmentSection() {
   return Consumer<AppointmentController>(
@@ -423,12 +489,15 @@ Widget _buildAppointmentSection() {
       }
 
       if (controller.error != null) {
-        return Text("Erreur : ${controller.error}", style: const TextStyle(color: Colors.red));
+        return Text(controller.error!, style: const TextStyle(color: Colors.red));
       }
 
-      if (controller.appointments.isEmpty) {
+      final allAppointments = controller.appointments;
+      if (allAppointments.isEmpty) {
         return const Text("Aucun rendez-vous à venir.");
       }
+
+      final firstThree = allAppointments.take(3).toList();
 
       return Card(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -437,18 +506,42 @@ Widget _buildAppointmentSection() {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 🔹 Titre + bouton Voir tout
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text("Prochains rendez-vous", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      setState(() => _currentIndex = 3); // 👈 Redirection vers l'onglet RDV
+                    },
                     child: const Text("Voir tout", style: TextStyle(color: Color(0xFF4F46E5))),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              ...controller.appointments.map(_buildAppointmentTile).toList(),
+
+              // 🔹 Liste des 3 premiers RDV
+              ...firstThree.map((a) => Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4F46E5).withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF4F46E5).withOpacity(0.1)),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.event_note, color: Color(0xFF4F46E5)),
+                      title: Text(a.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      subtitle: Text("${a.doctor} - ${a.location}"),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(DateFormat("d MMM", "fr_FR").format(a.dateTime), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(DateFormat("HH:mm").format(a.dateTime), style: const TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  )),
             ],
           ),
         ),
@@ -456,6 +549,8 @@ Widget _buildAppointmentSection() {
     },
   );
 }
+
+
 
 Widget _buildAppointmentTile(Appointment appt) {
   final isTomorrow = appt.dateTime.difference(DateTime.now()).inDays == 1;
