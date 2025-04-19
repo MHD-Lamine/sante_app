@@ -13,7 +13,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-# Uncomment the following lines to enable pgAdmin
+
   web:
     build: ./backend
     ports:
@@ -24,15 +24,9 @@ services:
       - ./backend:/app
     depends_on:
       - db
-
-## Uncomment the following lines to enable the cron service
-  cron:
-    build: ./cron
-    depends_on:
-      - web
-    volumes:
-      - ./backend:/app
-
+    restart: always
+    command: sh -c "cron && python run.py"
+    # Important : on lance cron en même temps que Flask
 
 volumes:
   pgdata:

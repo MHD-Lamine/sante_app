@@ -107,6 +107,9 @@ class Appointment(db.Model):
     doctor = db.Column(db.Text)
     date_time = db.Column(db.DateTime)
     notes = db.Column(db.Text)
+    status = db.Column(db.String(50))  # ex: "confirmé", "annulé", etc.
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
 # ============================
 # 🔹 Conseils santé

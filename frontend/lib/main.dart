@@ -25,7 +25,7 @@ void main() async {
   await initializeDateFormatting('fr_FR');
 
   // 🔔 Initialisation du système de notification locale
-  // await NotificationService().init();
+  //gi await NotificationService().init();
 
   runApp(
     MultiProvider(

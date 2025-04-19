@@ -3,7 +3,7 @@ from app.models import (
     Alert, Appointment, HealthTip, Medication, MedicationSchedule,
     Reminder, Report, db, User, Measure
 )
-from datetime import datetime
+from datetime import date, datetime
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -144,7 +144,7 @@ def create_medication():
     return jsonify({"message": "Médicament ajouté avec horaires"}), 201
 
 @main.route("/medications/<int:user_id>", methods=["GET"])
-@jwt_required()
+#@jwt_required()
 def get_medications_by_user(user_id):
     medications = Medication.query.filter_by(user_id=user_id).all()
     result = []
@@ -278,7 +278,7 @@ def create_appointment():
     return jsonify({"message": "Rendez-vous créé"}), 201
 
 @main.route("/appointments", methods=["GET"])
-@jwt_required()
+#@jwt_required()
 def get_appointments():
     user_id = get_jwt_identity()
     appts = Appointment.query.filter_by(user_id=user_id).order_by(Appointment.date_time.asc()).all()
@@ -329,3 +329,13 @@ def get_health_tips():
             "created_at": t.created_at.strftime("%Y-%m-%d %H:%M:%S")
         } for t in tips
     ])
+
+
+
+@main.route("/reset-medications", methods=["POST"])
+def reset_medications():
+    schedules = MedicationSchedule.query.all()
+    for sched in schedules:
+        sched.taken = False
+    db.session.commit()
+    return jsonify({"message": "Toutes les prises ont été réinitialisées"}), 200

@@ -1,0 +1,6 @@
+RDV : les 3 premiers rvd proche doit s'afficher et le reste doit etre masqué dans accueil
+pour les conseil de santé : 1 seul conseil de santé doit s'afficher et le reste doit etre masqué dans accueil.
+elle doit s'afficher selon les donneer du patient de facon intelligente
+
+Medicament : les Medicaments doivent s'afficher selon heure a la heur a la quel on doit prendre .
+les Medicament qui doit etre pris a 8h00 doivent safficher juqu'a 10h30 par exemple  et disparait pour que medicament suite saffiche et un suit de suit.

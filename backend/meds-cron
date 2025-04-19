@@ -1,0 +1,1 @@
+*/2 * * * * /app/reset_meds.sh >> /var/log/cron.log 2>&1
