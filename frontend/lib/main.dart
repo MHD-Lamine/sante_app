@@ -5,7 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 // 📦 Services & Controllers
 import 'package:Sante/services/notification_service.dart';
-import 'package:Sante/controllers/AuthController.dart';
+import 'package:Sante/controllers/auth_controller.dart';
 import 'package:Sante/controllers/measure_controller.dart';
 import 'package:Sante/controllers/user_controller.dart';
 import 'package:Sante/controllers/medication_controller.dart';
@@ -15,8 +15,12 @@ import 'package:Sante/controllers/health_tip_controller.dart';
 // 🖥️ Screens
 import 'package:Sante/screens/splash_screen.dart';
 import 'package:Sante/screens/login_screen.dart';
+import 'package:Sante/screens/register_screen.dart';
 import 'package:Sante/screens/home_screen.dart';
 import 'package:Sante/screens/appointment_screen.dart';
+
+// 📌 Routes centralisées
+import 'package:Sante/constants/routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +29,7 @@ void main() async {
   await initializeDateFormatting('fr_FR');
 
   // 🔔 Initialisation du système de notification locale
-  //gi await NotificationService().init();
+  // await NotificationService().init(); // Si tu veux réactiver
 
   runApp(
     MultiProvider(
@@ -63,13 +67,13 @@ class MyApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      initialRoute: '/splash',
+      initialRoute: AppRoutes.splash,
       routes: {
-        '/splash': (context) => const SplashScreen(),
-        '/': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/appointments': (context) => const AppointmentScreen(),
-        // Ajoute ici d'autres routes si nécessaire
+        AppRoutes.splash: (_) => const SplashScreen(),
+        AppRoutes.login: (_) => const LoginScreen(),
+        AppRoutes.register: (_) => const RegisterScreen(),
+        AppRoutes.home: (_) => const HomeScreen(),
+        AppRoutes.appointments: (_) => const AppointmentScreen(),
       },
     );
   }

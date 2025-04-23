@@ -1,30 +1,27 @@
-# Import du module os pour accéder aux variables d'environnement du système
 import os
-
-# Import de la fonction load_dotenv pour charger automatiquement les variables d’un fichier .env
+from datetime import timedelta
 from dotenv import load_dotenv
 
-# Chargement des variables définies dans le fichier .env (s'il existe)
+# Charge les variables d’environnement depuis un fichier .env
 load_dotenv()
 
-# Définition de la classe de configuration principale utilisée par Flask
 class Config:
-    # Définition de l'URL de connexion à la base de données PostgreSQL
-    # Elle est lue depuis la variable d'environnement DATABASE_URL
-    # Si cette variable n'existe pas, une URL par défaut est utilisée
+    # === 🔐 Sécurité générale ===
+    SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key")  # ⚠️ À changer en production
+
+    # === 🗄️ Base de données ===
     SQLALCHEMY_DATABASE_URI = os.getenv(
-        "DATABASE_URL", 
+        "DATABASE_URL",
         "postgresql://postgres:postgres@db:5432/suivi_sante"
     )
-
-    # Désactive le suivi des modifications d'objet par SQLAlchemy
-    # Cela améliore les performances et évite les avertissements inutiles
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Clé secrète utilisée pour sécuriser les sessions Flask ou les tokens JWT
-    # Elle est lue depuis le fichier .env ou définie par défaut (à modifier en production)
-    SECRET_KEY = os.getenv("SECRET_KEY", "dev_secret_key")
+    # === 🪙 JSON Web Tokens (JWT) ===
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev_jwt_secret")
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)   # Access token court
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)     # Refresh token long
+    JWT_TOKEN_LOCATION = ["headers"]
+    JWT_COOKIE_CSRF_PROTECT = False  # Si tu utilises les headers, pas de protection CSRF
 
-    # Mode debug activé (affiche les erreurs détaillées et recharge automatique du serveur)
-    # À désactiver dans un environnement de production
-    DEBUG = True
+    # === 🐞 Mode debug ===
+    DEBUG = os.getenv("FLASK_DEBUG", "true").lower() == "true"

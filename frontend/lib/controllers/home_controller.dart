@@ -20,22 +20,18 @@ class HomeController with ChangeNotifier {
     notifyListeners();
 
     try {
-      final userId = await ApiService.getUserId();
-      if (userId == null) throw Exception("Utilisateur non connecté");
-
-      final measures = await ApiService.fetchMeasures(userId);
+      final measures = await ApiService.fetchMeasures(); // ✅ sans userId
       if (measures.isEmpty) throw Exception("Aucune mesure trouvée");
 
-      // Dernière mesure
       final last = measures.first;
-      latestGlycemia = last['glycemia']?.toDouble();
-      final systolic = last['systolic']?.toInt();
-      final diastolic = last['diastolic']?.toInt();
-      latestTension = (systolic != null && diastolic != null) ? "$systolic/$diastolic" : "--";
 
+      latestGlycemia = (last['glycemia'] ?? 0).toDouble();
+      final systolic = (last['systolic'] ?? 0).toInt();
+      final diastolic = (last['diastolic'] ?? 0).toInt();
+
+      latestTension = "$systolic/$diastolic";
       lastUpdate = DateTime.parse(last['date']);
 
-      // 📊 Données pour les graphiques
       glycemiaChartData = measures.map<ChartData>((m) {
         return ChartData(
           time: DateFormat.Hm().format(DateTime.parse(m['date'])),
@@ -51,7 +47,7 @@ class HomeController with ChangeNotifier {
         );
       }).toList().reversed.toList();
     } catch (e) {
-      error = "Erreur : ${e.toString()}";
+      error = "Erreur de chargement : ${e.toString()}";
     }
 
     loading = false;

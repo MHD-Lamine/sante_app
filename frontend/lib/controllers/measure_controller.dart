@@ -20,15 +20,12 @@ class MeasureController with ChangeNotifier {
     notifyListeners();
 
     try {
-      final userId = await ApiService.getUserId();
-      if (userId == null) throw Exception("Utilisateur non connecté");
-
-      final measures = await ApiService.fetchMeasures(userId);
+      final measures = await ApiService.fetchMeasures();
       if (measures.isEmpty) throw Exception("Aucune mesure disponible");
 
       final last = measures.first;
 
-      latestGlycemia = last['glycemia']?.toDouble();
+      latestGlycemia = (last['glycemia'] ?? 0).toDouble();
       final systolic = last['systolic']?.toInt();
       final diastolic = last['diastolic']?.toInt();
       latestTension = (systolic != null && diastolic != null)

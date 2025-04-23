@@ -94,7 +94,6 @@ class _AddMeasureFormState extends State<AddMeasureForm> {
     try {
       setState(() => isLoading = true);
 
-      final userId = await ApiService.getUserId();
       final now = DateTime.now();
       final date = "${now.year}-${_two(now.month)}-${_two(now.day)} ${_two(now.hour)}:${_two(now.minute)}:${_two(now.second)}";
 
@@ -104,7 +103,6 @@ class _AddMeasureFormState extends State<AddMeasureForm> {
       final temperature = double.tryParse(temperatureController.text.trim());
 
       final body = {
-        "user_id": userId,
         "date": date,
         "glycemia": glycemia,
         "systolic": systolic,

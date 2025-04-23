@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
+  final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
@@ -19,13 +20,14 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final auth = Provider.of<AuthController>(context, listen: false);
-    final success = await auth.login(
+    final success = await auth.register(
+      nameController.text.trim(),
       emailController.text.trim(),
       passwordController.text.trim(),
     );
 
     if (success && mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
@@ -35,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
       builder: (context, auth, _) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text("Connexion"),
+            title: const Text("Inscription"),
             backgroundColor: const Color(0xFF4F46E5),
           ),
           body: Padding(
@@ -44,17 +46,28 @@ class _LoginScreenState extends State<LoginScreen> {
               key: _formKey,
               child: ListView(
                 children: [
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 32),
                   const Text(
-                    "Bienvenue 👋",
+                    "Créer un compte",
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    "Connectez-vous pour continuer",
+                    "Entrez vos informations pour commencer",
                     style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 32),
+
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: "Nom complet",
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) =>
+                        value == null || value.isEmpty ? "Nom requis" : null,
+                  ),
+                  const SizedBox(height: 16),
 
                   TextFormField(
                     controller: emailController,
@@ -64,9 +77,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     keyboardType: TextInputType.emailAddress,
                     validator: (value) =>
-                        value == null || value.isEmpty ? "Email requis" : null,
+                        value == null || !value.contains('@')
+                            ? "Email invalide"
+                            : null,
                   ),
                   const SizedBox(height: 16),
+
                   TextFormField(
                     controller: passwordController,
                     decoration: const InputDecoration(
@@ -93,22 +109,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: auth.isLoading
-                        ? const CircularProgressIndicator(
-                            color: Colors.white,
-                          )
-                        : const Text("Se connecter",
-                            style:
-                                TextStyle(fontSize: 16, color: Colors.white)),
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("S'inscrire",
+                            style: TextStyle(color: Colors.white, fontSize: 16)),
                   ),
 
                   const SizedBox(height: 16),
-
                   TextButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, '/register');
+                      Navigator.pushReplacementNamed(context, '/login');
                     },
-                    child: const Text("Pas encore de compte ? S'inscrire"),
-                  ),
+                    child: const Text("Déjà un compte ? Se connecter"),
+                  )
                 ],
               ),
             ),

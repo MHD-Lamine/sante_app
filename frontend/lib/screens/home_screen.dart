@@ -1,3 +1,4 @@
+import 'package:Sante/constants/routes.dart';
 import 'package:Sante/controllers/health_tip_controller.dart';
 import 'package:Sante/controllers/medication_controller.dart';
 import 'package:Sante/models/appointment.dart';
@@ -28,36 +29,40 @@ class _HomeScreenState extends State<HomeScreen> {
   String userName = "Utilisateur";
   Timer? refreshTimer;
 
-
   @override
   void initState() {
     super.initState();
     _loadData();
-    
-    refreshTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
-      _loadData(); // recharge toutes les données
-    });
 
-    @override
-    void dispose() {
-      refreshTimer?.cancel(); // arrêter le timer quand la page se ferme
-      super.dispose();
-    }
+    // ✅ Timer sécurisé avec check de `mounted`
+    refreshTimer = Timer.periodic(const Duration(minutes: 2), (timer) {
+      if (mounted) _loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    refreshTimer?.cancel(); // ✅ On annule bien le timer quand le widget est détruit
+    super.dispose();
   }
 
   Future<void> _loadData() async {
     final name = await ApiService.getUserNameFromStorage();
+
+    // ✅ Sécurité : on vérifie si le widget est toujours monté
+    if (!mounted) return;
+
     setState(() {
       userName = name ?? "Utilisateur";
     });
 
-    Provider.of<MeasureController>(context, listen: false).loadMeasures(); //Chargement des mesures
-    Provider.of<MedicationController>(context, listen: false).loadTodayMedications(); //Chargement des médicaments
-    Provider.of<AppointmentController>(context, listen: false).loadAppointments(); //Chargement des rendez-vous
-    Provider.of<HealthTipController>(context, listen: false).fetchTips(); //Chargement des conseils santé
-
-
+    Provider.of<MeasureController>(context, listen: false).loadMeasures();
+    Provider.of<MedicationController>(context, listen: false).loadTodayMedications();
+    Provider.of<AppointmentController>(context, listen: false).loadAppointments();
+    Provider.of<HealthTipController>(context, listen: false).fetchTips();
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -357,7 +362,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () async {
               await ApiService.logout();
               if (context.mounted) {
-                Navigator.pushReplacementNamed(context, '/');
+                Navigator.pushReplacementNamed(context, AppRoutes.login);
               }
             },
           ),

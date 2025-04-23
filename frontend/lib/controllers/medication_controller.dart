@@ -16,10 +16,7 @@ class MedicationController with ChangeNotifier {
     notifyListeners();
 
     try {
-      final userId = await ApiService.getUserId();
-      if (userId == null) throw Exception("Utilisateur non connecté");
-
-      todayMedications = await ApiService.fetchTodayMedications(userId);
+      todayMedications = await ApiService.fetchTodayMedications();
     } catch (e) {
       error = "Erreur chargement médicaments : $e";
     }
