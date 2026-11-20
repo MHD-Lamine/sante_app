@@ -1,7 +1,7 @@
 # 💡 Application intelligente de suivi santé (diabète & hypertension)
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Build with Docker](https://img.shields.io/badge/docker-ready-blue)](./docker)
+[![Build with Docker](https://img.shields.io/badge/docker-ready-blue)](./docker-compose.yml)
 [![Made with Flask](https://img.shields.io/badge/backend-flask-green)](./backend)
 [![Made with Flutter](https://img.shields.io/badge/frontend-flutter-blue)](./frontend)
 
@@ -25,13 +25,14 @@ Les fonctionnalités principales incluent :
 ## 📁 Structure du projet
 
 ```
-suivi_sante/
+sante_app/
 ├── backend/        → API Flask avec PostgreSQL
 ├── frontend/       → Application Flutter mobile
 ├── ai/             → Modèles IA, Jupyter Notebooks
 ├── arduino/        → Code du bracelet connecté (Arduino)
 ├── n8n/            → Automatisation (alertes, PDF)
-├── docker/         → docker-compose + configuration conteneurs
+├── database/       → Script SQL
+├── docker-compose.yml → Orchestration des conteneurs
 ├── docs/           → Diagrammes, cahier des charges
 ```
 
@@ -42,8 +43,8 @@ suivi_sante/
 ### 1. Cloner le projet
 
 ```bash
-git clone https://github.com/MHD-Lamine/sante-app.git
-cd suivi-sante-app
+git clone https://github.com/MHD-Lamine/sante_app.git
+cd sante_app
 ```
 
 ### 2. Copier les variables d’environnement
@@ -52,10 +53,26 @@ cd suivi-sante-app
 cp backend/.env.example backend/.env
 ```
 
+Puis remplacer `SECRET_KEY` et `JWT_SECRET_KEY` par des valeurs aléatoires :
+
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
 ### 3. Lancer tous les services
 
 ```bash
-docker-compose -f docker/docker-compose.yml up --build
+docker-compose up --build
+```
+
+### 4. Créer / mettre à jour les tables
+
+```bash
+# Première fois uniquement (le dossier migrations/ n'est pas versionné)
+docker-compose exec web flask db init
+docker-compose exec web flask db migrate -m "init"
+
+docker-compose exec web flask db upgrade
 ```
 
 ---
@@ -64,12 +81,17 @@ docker-compose -f docker/docker-compose.yml up --build
 
 - Test de fonctionnement : `GET /ping`
 - Utilisateurs :
-  - `POST /users`
-  - `GET /users`
-- Mesures :
+  - `POST /users` (inscription)
+  - `POST /login`, `POST /refresh`
+  - `GET /profile`, `PUT /profile`, `PUT /change_password`
+- Mesures (utilisateur du token JWT) :
   - `POST /measures`
-  - `GET /measures/<user_id>`
-  - `GET /measures/latest/<user_id>`
+  - `GET /measures`
+- Médicaments :
+  - `POST /medications`, `GET /medications`
+  - `PUT /medications/schedules/<id>/take`
+- Rendez-vous : `POST /appointments`, `GET /appointments`
+- Conseils santé : `GET /healthtips`
 
 ---
 

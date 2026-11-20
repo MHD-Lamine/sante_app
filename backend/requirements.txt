@@ -1,22 +1,22 @@
 # === 🔥 Framework principal ===
-Flask
+Flask==3.1.3
 
 # === 🗃 ORM & Base de données ===
-Flask-SQLAlchemy
-psycopg2-binary  # Connecteur PostgreSQL
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.58
+psycopg2-binary==2.9.13  # Connecteur PostgreSQL
 
-# === ♻️ Migrations de base de données ===
-Flask-Migrate
-Flask-Script  # Nécessaire pour manage.py
+# === ♻️ Migrations de base de données (commandes "flask db ...") ===
+Flask-Migrate==4.1.0
 
 # === 🌍 CORS (pour permettre Flutter ↔ Flask) ===
-Flask-Cors
+Flask-Cors==6.0.5
 
 # === 🔐 Variables d'environnement ===
-python-dotenv
+python-dotenv==1.2.4
 
-# === (Optionnel) 🔒 Authentification avec JWT ===
-Flask-JWT-Extended
+# === 🔒 Authentification avec JWT ===
+Flask-JWT-Extended==4.7.4
 
-# === (Optionnel) 📦 Pour les appels HTTP en local ou tests ===
-requests
+# === 📦 Pour les appels HTTP en local ou tests ===
+requests==2.34.2
