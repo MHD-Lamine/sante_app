@@ -7,6 +7,13 @@ class AppointmentController with ChangeNotifier {
   String? error;
   List<Appointment> appointments = [];
 
+  /// Rendez-vous pas encore passés, du plus proche au plus lointain
+  List<Appointment> get upcoming {
+    final now = DateTime.now();
+    return appointments.where((a) => a.dateTime.isAfter(now)).toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+  }
+
   /// Charger les rendez-vous à venir
   Future<void> loadAppointments() async {
     isLoading = true;

@@ -20,8 +20,8 @@ class Appointment {
     return Appointment(
       id: json['id'],
       title: json['title'],
-      location: json['location'],
-      doctor: json['doctor'],
+      location: json['location'] ?? '',
+      doctor: json['doctor'] ?? '',
       dateTime: DateTime.parse(json['date_time']),
       notes: json['notes'] ?? '',
     );

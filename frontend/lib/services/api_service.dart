@@ -207,6 +207,16 @@ class ApiService {
     }
   }
 
+  // Un seul conseil, choisi par le backend selon la dernière mesure
+  static Future<HealthTip> fetchRecommendedTip() async {
+    final response = await getSecure('/healthtips/recommended');
+    if (response.statusCode == 200) {
+      return HealthTip.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception("Erreur santé : ${response.statusCode}");
+    }
+  }
+
   // === POST générique
   static Future<void> post(String endpoint, Map<String, dynamic> data) async {
     var token = await getToken();
