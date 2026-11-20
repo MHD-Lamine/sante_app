@@ -8,5 +8,5 @@ app = create_app()
 
 # Ce bloc permet de lancer le serveur uniquement si ce script est exécuté directement
 if __name__ == "__main__":
-    # Lancement du serveur Flask en mode debug (port 5000 par défaut)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Lancement du serveur Flask (debug selon FLASK_DEBUG dans .env)
+    app.run(host='0.0.0.0', port=5000, debug=app.config["DEBUG"])

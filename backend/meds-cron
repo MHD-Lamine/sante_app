@@ -1,1 +1,2 @@
-*/2 * * * * /app/reset_meds.sh >> /var/log/cron.log 2>&1
+# Réinitialise les prises de médicaments chaque jour à minuit
+0 0 * * * /bin/bash /app/reset_meds.sh >> /var/log/cron.log 2>&1

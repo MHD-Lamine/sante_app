@@ -9,6 +9,10 @@ from app.models import db, User, Measure, Medication, MedicationSchedule, Appoin
 
 main = Blueprint("main", __name__)
 
+def current_user_id():
+    # Le "sub" du JWT est une chaîne (exigé par Flask-JWT-Extended >= 4.7)
+    return int(get_jwt_identity())
+
 # === 🧪 Test API
 @main.route("/ping", methods=["GET"])
 def ping():
@@ -25,8 +29,8 @@ def login():
     if not user or not check_password_hash(user.password, data["password"]):
         return jsonify({"msg": "Identifiants invalides"}), 401
 
-    access_token = create_access_token(identity=user.id, expires_delta=timedelta(minutes=15))
-    refresh_token = create_refresh_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id), expires_delta=timedelta(minutes=15))
+    refresh_token = create_refresh_token(identity=str(user.id))
 
     return jsonify({
         "access_token": access_token,
@@ -66,7 +70,7 @@ def register():
 @main.route("/profile", methods=["GET"])
 @jwt_required()
 def get_profile():
-    user = User.query.get_or_404(get_jwt_identity())
+    user = User.query.get_or_404(current_user_id())
     return jsonify({
         "id": user.id, "name": user.name,
         "email": user.email, "role": user.role
@@ -75,7 +79,7 @@ def get_profile():
 @main.route("/profile", methods=["PUT"])
 @jwt_required()
 def update_profile():
-    user = User.query.get_or_404(get_jwt_identity())
+    user = User.query.get_or_404(current_user_id())
     data = request.get_json()
     if "name" in data: user.name = data["name"]
     if "email" in data: user.email = data["email"]
@@ -83,12 +87,26 @@ def update_profile():
     db.session.commit()
     return jsonify({"message": "Profil mis à jour"}), 200
 
+@main.route("/change_password", methods=["PUT"])
+@jwt_required()
+def change_password():
+    user = User.query.get_or_404(current_user_id())
+    data = request.get_json() or {}
+    if not data.get("old_password") or not data.get("new_password"):
+        return jsonify({"msg": "Champs requis : old_password, new_password"}), 400
+    if not check_password_hash(user.password, data["old_password"]):
+        return jsonify({"msg": "Ancien mot de passe incorrect"}), 401
+    user.password = generate_password_hash(data["new_password"])
+    user.last_password_change = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"msg": "Mot de passe mis à jour"}), 200
+
 # === 📏 Mesures
 @main.route("/measures", methods=["POST"])
 @jwt_required()
 def create_measure():
     try:
-        user_id = get_jwt_identity()
+        user_id = current_user_id()
         data = request.get_json()
         measure = Measure(
             user_id=user_id,
@@ -107,7 +125,7 @@ def create_measure():
 @main.route("/measures", methods=["GET"])
 @jwt_required()
 def get_measures():
-    user_id = get_jwt_identity()
+    user_id = current_user_id()
     measures = Measure.query.filter_by(user_id=user_id).order_by(Measure.date.desc()).all()
     return jsonify([
         {
@@ -122,7 +140,7 @@ def get_measures():
 @jwt_required()
 def create_medication():
     try:
-        user_id = get_jwt_identity()
+        user_id = current_user_id()
         data = request.get_json()
         med = Medication(
             user_id=user_id,
@@ -150,7 +168,7 @@ def create_medication():
 @main.route("/medications", methods=["GET"])
 @jwt_required()
 def get_medications():
-    user_id = get_jwt_identity()
+    user_id = current_user_id()
     meds = Medication.query.filter_by(user_id=user_id).all()
     return jsonify([
         {
@@ -173,13 +191,21 @@ def get_medications():
 @main.route("/medications/schedules/<int:schedule_id>/take", methods=["PUT"])
 @jwt_required()
 def mark_schedule_as_taken(schedule_id):
-    sched = MedicationSchedule.query.get_or_404(schedule_id)
+    # On ne peut marquer que les prises de ses propres médicaments
+    sched = (MedicationSchedule.query
+             .join(Medication)
+             .filter(MedicationSchedule.id == schedule_id,
+                     Medication.user_id == current_user_id())
+             .first_or_404())
     sched.taken = True
     db.session.commit()
     return jsonify({"message": "Prise marquée comme faite"}), 200
 
 @main.route("/reset-medications", methods=["POST"])
 def reset_medications():
+    # Réservé au cron du conteneur (reset_meds.sh appelle localhost)
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"msg": "Accès refusé"}), 403
     for sched in MedicationSchedule.query.all():
         sched.taken = False
     db.session.commit()
@@ -190,7 +216,7 @@ def reset_medications():
 @jwt_required()
 def create_appointment():
     try:
-        user_id = get_jwt_identity()
+        user_id = current_user_id()
         data = request.get_json()
         appt = Appointment(
             user_id=user_id,
@@ -209,7 +235,7 @@ def create_appointment():
 @main.route("/appointments", methods=["GET"])
 @jwt_required()
 def get_appointments():
-    user_id = get_jwt_identity()
+    user_id = current_user_id()
     appts = Appointment.query.filter_by(user_id=user_id).order_by(Appointment.date_time.asc()).all()
     return jsonify([
         {

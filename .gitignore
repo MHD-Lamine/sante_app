@@ -1,37 +1,29 @@
-<<<<<<< HEAD
 # Python
 __pycache__/
 *.pyc
+.venv/
 .env
 
-# Docker
+# Docker / logs
 *.log
-*.pid MHD-Lamine
+*.pid
 
-# Frontend
+# Frontend (Flutter)
 build/
+dist/
 node_modules/
-flutter/.dart_tool
+.dart_tool/
+.flutter-plugins
+.packages
+pubspec.lock
 
 # Jupyter
 .ipynb_checkpoints/
 
-# Migrations
-backend/migrations/
-=======
-# Node / Flutter / Python / Arduino
-.env
-__pycache__/
-*.pyc
-build/
-dist/
-*.ipynb_checkpoints/
-*.DS_Store
-.venv/
+# Arduino
+*.hex
+
+# Éditeurs / OS
 .idea/
 .vscode/
-.flutter-plugins
-.packages
-pubspec.lock
-*.hex
->>>>>>> 9b2b9aada5a936c49794ed78f2fb9cf2c8b8ff19
+.DS_Store
