@@ -5,16 +5,16 @@ import '../services/api_service.dart';
 class HealthTipController extends ChangeNotifier {
   bool isLoading = false;
   String? error;
-  List<HealthTip> tips = [];
+  HealthTip? tip;
 
-  // 🔄 Récupère les conseils santé
+  // 🔄 Récupère le conseil choisi selon les dernières mesures du patient
   Future<void> fetchTips() async {
     isLoading = true;
     error = null;
     notifyListeners();
 
     try {
-      tips = await ApiService.fetchHealthTips();
+      tip = await ApiService.fetchRecommendedTip();
     } catch (e) {
       error = e.toString();
     }

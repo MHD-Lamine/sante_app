@@ -31,19 +31,28 @@ class MedicationSchedule {
     );
   }
 
-  /// 🔄 Afficher uniquement les prises entre [time - 30min] et [time + 2h]
-  bool isVisibleNow() {
+  /// Fenêtre d'affichage d'une prise : de [heure - 30 min] à [heure + 2h30]
+  /// (ex : prise de 8h00 visible de 7h30 à 10h30)
+  static const showBefore = Duration(minutes: 30);
+  static const showAfter = Duration(hours: 2, minutes: 30);
+
+  /// 🕒 Heure de la prise aujourd'hui (null si le format est invalide)
+  DateTime? scheduledToday() {
     try {
       final now = DateTime.now();
-      final today = DateFormat('HH:mm').parse(time);
-      final scheduledTime = DateTime(now.year, now.month, now.day, today.hour, today.minute);
-
-      final windowStart = scheduledTime.subtract(const Duration(minutes: 30));
-      final windowEnd = scheduledTime.add(const Duration(hours: 2));
-
-      return now.isAfter(windowStart) && now.isBefore(windowEnd);
-    } catch (e) {
-      return true; // En cas d’erreur de parsing, on affiche par défaut
+      final parsed = DateFormat('HH:mm').parse(time);
+      return DateTime(now.year, now.month, now.day, parsed.hour, parsed.minute);
+    } catch (_) {
+      return null;
     }
+  }
+
+  /// 🔄 La prise est-elle dans sa fenêtre d'affichage ?
+  bool isVisibleNow() {
+    final scheduledTime = scheduledToday();
+    if (scheduledTime == null) return false;
+    final now = DateTime.now();
+    return now.isAfter(scheduledTime.subtract(showBefore)) &&
+        now.isBefore(scheduledTime.add(showAfter));
   }
 }

@@ -1,14 +1,14 @@
 class HealthTip {
-  final int id;
+  final int? id; // null quand le conseil vient des règles intégrées du backend
   final String content;
   final String type;
-  final DateTime createdAt;
+  final String? reason; // ex : "Votre dernière glycémie est élevée"
 
   HealthTip({
-    required this.id,
+    this.id,
     required this.content,
     required this.type,
-    required this.createdAt,
+    this.reason,
   });
 
   /// Factory constructor pour créer un objet HealthTip depuis un JSON
@@ -16,8 +16,8 @@ class HealthTip {
     return HealthTip(
       id: json['id'],
       content: json['content'],
-      type: json['type'],
-      createdAt: DateTime.parse(json['created_at']),
+      type: json['type'] ?? 'général',
+      reason: json['reason'],
     );
   }
 }

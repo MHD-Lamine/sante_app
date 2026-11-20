@@ -260,3 +260,62 @@ def get_health_tips():
             "created_at": t.created_at.strftime("%Y-%m-%d %H:%M:%S")
         } for t in tips
     ])
+
+# Règles de choix du conseil, de la plus urgente à la moins urgente.
+# Glycémie en mmol/L, tension en mmHg, température en °C.
+TIP_RULES = [
+    ("hypoglycémie", lambda m: m.glycemia is not None and 0 < m.glycemia < 3.9,
+     "Votre dernière glycémie est basse",
+     "Prenez 15 g de sucre rapide (un verre de jus ou 3 morceaux de sucre), puis recontrôlez dans 15 minutes. Si elle reste basse, contactez votre médecin."),
+    ("urgence", lambda m: (m.systolic or 0) >= 180 or (m.diastolic or 0) >= 120,
+     "Votre dernière tension est très élevée",
+     "Reposez-vous et reprenez votre tension dans 5 minutes. Si elle reste aussi haute ou si vous avez mal à la tête, à la poitrine ou des troubles de la vue, appelez les urgences."),
+    ("hyperglycémie", lambda m: (m.glycemia or 0) > 10,
+     "Votre dernière glycémie est élevée",
+     "Buvez de l'eau, évitez les sucres rapides et recontrôlez votre glycémie plus tard. Si elle reste élevée, parlez-en à votre médecin."),
+    ("hypertension", lambda m: (m.systolic or 0) >= 140 or (m.diastolic or 0) >= 90,
+     "Votre dernière tension est élevée",
+     "Limitez le sel, évitez l'alcool et reprenez votre tension au calme. Si elle reste élevée, parlez-en à votre médecin."),
+    ("fièvre", lambda m: (m.temperature or 0) >= 38,
+     "Vous avez de la fièvre",
+     "Hydratez-vous, reposez-vous et surveillez votre glycémie plus souvent : la fièvre peut la déséquilibrer."),
+    ("hypotension", lambda m: 0 < (m.systolic or 999) < 90 or 0 < (m.diastolic or 999) < 60,
+     "Votre dernière tension est basse",
+     "Levez-vous lentement et buvez suffisamment. En cas de vertiges ou de malaise, contactez votre médecin."),
+]
+
+GENERAL_TIP = "Marchez 30 minutes par jour : l'activité physique aide à contrôler la glycémie et la tension."
+
+@main.route("/healthtips/recommended", methods=["GET"])
+@jwt_required()
+def get_recommended_tip():
+    """Un seul conseil, choisi selon la dernière mesure du patient (moins de 3 jours)."""
+    latest = (Measure.query
+              .filter(Measure.user_id == current_user_id(),
+                      Measure.date >= datetime.now() - timedelta(days=3))
+              .order_by(Measure.date.desc())
+              .first())
+
+    tip_type, reason, default_content = "général", None, GENERAL_TIP
+    if latest:
+        for rule_type, matches, rule_reason, rule_content in TIP_RULES:
+            if matches(latest):
+                tip_type, reason, default_content = rule_type, rule_reason, rule_content
+                break
+
+    # Conseil de la base pour ce type ; il change chaque jour mais reste stable dans la journée.
+    # En cas d'urgence, on garde toujours le message intégré.
+    if tip_type == "urgence":
+        tips = []
+    elif tip_type == "général":
+        # Conseils généraux : tous sauf ceux réservés à une anomalie
+        rule_types = [rule[0] for rule in TIP_RULES]
+        tips = (HealthTip.query
+                .filter(db.or_(HealthTip.type.is_(None), HealthTip.type.notin_(rule_types)))
+                .order_by(HealthTip.id).all())
+    else:
+        tips = HealthTip.query.filter_by(type=tip_type).order_by(HealthTip.id).all()
+    if tips:
+        tip = tips[datetime.now().toordinal() % len(tips)]
+        return jsonify({"id": tip.id, "type": tip.type or tip_type, "content": tip.content, "reason": reason})
+    return jsonify({"id": None, "type": tip_type, "content": default_content, "reason": reason})
